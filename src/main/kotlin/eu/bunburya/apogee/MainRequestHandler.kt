@@ -1,13 +1,11 @@
 package eu.bunburya.apogee
 
-import io.netty.buffer.ByteBuf
-import io.netty.buffer.Unpooled
+import eu.bunburya.apogee.static.FileServer
 import io.netty.channel.ChannelFuture
 import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
-import io.netty.util.CharsetUtil
-import java.nio.charset.Charset
+import java.util.logging.Logger
 
 /**
  * The main handler object that handles successful inbound requests and determines the appropriate response.
@@ -15,9 +13,19 @@ import java.nio.charset.Charset
 
 class MainRequestHandler(private val config: Config): ChannelInboundHandlerAdapter() {
 
-    private val logger = Logger(javaClass.name)
-    init {
-        logger.addLogHandler(config.LOG_LEVEL, LogHandler(config.LOG_FILE))
+    private val logger = Logger.getLogger(javaClass.name)
+    private val accessLogger = getAccessLogger(config)
+    private val fileServer = FileServer(config)
+
+    /**
+     * The main handler function which acts as a gateway to our business logic.
+     */
+    fun processRequest(request: Request): Response {
+
+        val validity = request.validity
+        if (! validity.isValid) return BadRequestResponse(validity.defaultMsg, request)
+        return fileServer.serveFile(request)
+
     }
 
     fun writeResponse(ctx: ChannelHandlerContext, response: Response) {
@@ -26,13 +34,13 @@ class MainRequestHandler(private val config: Config): ChannelInboundHandlerAdapt
             override fun operationComplete(future: ChannelFuture) {
                 assert(writtenFuture == future)
                 if (future.isSuccess) {
-                    logger.access(response)
+                    accessLogger.access(response)
                 } else {
-                    logger.error("Error writing to client.")
+                    logger.severe("Error writing to client.")
                     future.cause().printStackTrace()
                 }
                 ctx.close()
-                logger.debug("Closed connection.")
+                logger.fine("Closed connection.")
             }
         })
     }
@@ -43,9 +51,9 @@ class MainRequestHandler(private val config: Config): ChannelInboundHandlerAdapt
      */
     override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
         val request = msg as Request
-        logger.info("Got request ${request.content} from ${request.ipString}")
+        logger.fine("Got request ${request.content} from ${request.ipString}")
 
-        writeResponse(ctx, SuccessResponse("text/plain", "Hello world!\n", request))
+        writeResponse(ctx, processRequest(request))
 
     }
 

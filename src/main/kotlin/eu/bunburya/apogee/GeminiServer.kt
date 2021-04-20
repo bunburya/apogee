@@ -9,17 +9,18 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.ssl.SslContextBuilder
 import java.io.FileInputStream
 import java.security.KeyStore
+import java.util.logging.Logger
 import javax.net.ssl.KeyManagerFactory
 import kotlin.jvm.Throws
 
 private class GeminiChannelInitializer(private val config: Config): ChannelInitializer<SocketChannel>() {
 
-    private val logger = Logger.fromConfig(javaClass.name, config)
+    private val logger = Logger.getLogger(javaClass.name)
 
     @Throws(Exception::class)
     override fun initChannel(ch: SocketChannel) {
 
-        logger.debug("Initialising channel.")
+        logger.fine("Initialising channel.")
 
         val pipeline = ch.pipeline()
 
@@ -35,27 +36,24 @@ private class GeminiChannelInitializer(private val config: Config): ChannelIniti
             // SSH handler
             sslCtx.newHandler(ch.alloc()),
 
+            // Outbound handlers go first so inbound handlers can send Response directly back to clients if necessary
+            ResponseEncoder(),
+
             // Inbound handlers
             RequestDecoder(),
-
-            // Outbound handlers
-            ResponseEncoder(),
 
             // The main request handler with our business logic should always be last in the pipeline
             MainRequestHandler(config),
         )
 
-        logger.debug("All handlers added.")
+        logger.fine("All handlers added.")
     }
 
 }
 
 class GeminiServer(private val config: Config) {
 
-    private val logger = Logger(javaClass.name)
-    init {
-        logger.addLogHandler(config.LOG_LEVEL, LogHandler(config.LOG_FILE))
-    }
+    private val logger = Logger.getLogger(javaClass.name)
 
     @Throws(Exception::class)
     fun run() {
@@ -71,12 +69,12 @@ class GeminiServer(private val config: Config) {
                 childOption(ChannelOption.SO_KEEPALIVE, true)
             }
 
-            logger.debug("Server bootstrapped; beginning bind.")
+            logger.fine("Server bootstrapped; beginning bind.")
 
             // Bind and start to accepting incoming connections.
             val future = bootstrap.bind(config.HOSTNAME, config.PORT).sync()
             future.channel().closeFuture().sync()
-            logger.debug("Bind successful.")
+            logger.fine("Bind successful.")
 
         } finally {
             workerGroup.shutdownGracefully()

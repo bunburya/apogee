@@ -3,6 +3,7 @@ package eu.bunburya.apogee
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
 import io.netty.util.CharsetUtil
+import java.util.logging.Logger
 
 const val UTF_8_SPACE = 32
 val UTF_8_CRLF = byteArrayOf(13, 10)
@@ -27,6 +28,9 @@ abstract class Response(
     val request: Request,
     val body: ByteArray? = null
 ) {
+
+    private val logger = Logger.getLogger(javaClass.name)
+
     /**
      * Convert the Response object to a ByteBuf for writing to a socket.
      *
@@ -53,7 +57,7 @@ abstract class NonErrorResponse(
     meta: String,
     request: Request,
     body: ByteArray? = null
-): Response(statusCode, meta, request)
+): Response(statusCode, meta, request, body)
 
 /**
  * Input expected.
@@ -117,7 +121,7 @@ abstract class ErrorResponse(
 open class TemporaryFailureResponse(
     errorMessage: String? = null,
     request: Request,
-    private val subStatusCode: Int = 0,
+    subStatusCode: Int = 0,
 ): ErrorResponse(errorMessage, request, 40,subStatusCode)
 
 /**

@@ -1,5 +1,7 @@
 package eu.bunburya.apogee
 
+import java.util.logging.Level
+
 fun main() {
     val config = Config(
         "/home/alan/bin/apogee/src/test/resources/certs/ks.p12",
@@ -8,8 +10,10 @@ fun main() {
         1965,
         "testpass",
         null,
-        LogLevel.DEBUG
+        Level.FINE,
+        null
     )
+    configureLogging(config)
     val server = GeminiServer(config)
     server.run()
 }
