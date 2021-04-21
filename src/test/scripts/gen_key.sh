@@ -1,4 +1,4 @@
-TEST_CERT_DIR=/home/alan/bin/apogee/src/test/resources/certs/
+TEST_CERT_DIR="$1"
 
 cd $TEST_CERT_DIR || exit
 
