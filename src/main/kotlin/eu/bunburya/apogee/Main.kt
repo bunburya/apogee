@@ -5,7 +5,7 @@ import java.util.logging.Level
 fun main() {
     val config = Config(
         "/home/alan/bin/apogee/src/test/resources/certs/ks.p12",
-        "/home/alan/bin/apogee/src/test/resources/srv",
+        "/home/alan/bin/apogee/src/test/resources/srv/capsule",
         "localhost",
         1965,
         "testpass",

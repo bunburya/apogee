@@ -7,10 +7,27 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import java.util.logging.Logger
 
+/*
+Pipeline:
+- Inbound request > SSL handled > decoded to Request > Request handled by application
+- Response written by application > Response encoded to byte stream > SSL handled > sent to client
+
+Application logic:
+- TODO: dynamic content handlers
+- File server
+  - Check if request is valid; if not, write bad Response
+  - Check if requested resource exists and is readable; if not, write bad Response
+  - Check if requested resource is a directory; if so:
+    - Check if directory is executable; if not, write bad response
+    - Check if there is an index file:
+      - If so, return the index file as OK response
+      - If not, return the directory listing as OK response
+  - If requested resource is not a directory, return the resource as OK response
+ */
+
 /**
  * The main handler object that handles successful inbound requests and determines the appropriate response.
  */
-
 class MainRequestHandler(private val config: Config): ChannelInboundHandlerAdapter() {
 
     private val logger = Logger.getLogger(javaClass.name)
@@ -24,7 +41,7 @@ class MainRequestHandler(private val config: Config): ChannelInboundHandlerAdapt
 
         val validity = request.validity
         if (! validity.isValid) return BadRequestResponse(validity.defaultMsg, request)
-        return fileServer.serveFile(request)
+        return fileServer.serveResource(request)
 
     }
 
