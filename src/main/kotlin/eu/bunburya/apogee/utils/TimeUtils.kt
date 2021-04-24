@@ -1,4 +1,4 @@
-package eu.bunburya.apogee
+package eu.bunburya.apogee.utils
 
 import java.time.Instant
 import java.time.ZoneId

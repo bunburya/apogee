@@ -1,9 +1,9 @@
-package eu.bunburya.apogee
+package eu.bunburya.apogee.models
 
 import java.net.SocketAddress
 import java.net.URI
 import java.net.URISyntaxException
-import kotlin.properties.Delegates
+import java.security.cert.Certificate
 
 /**
  * A basic class representing the validity of a request.
@@ -26,10 +26,12 @@ enum class RequestValidity(val isValid: Boolean, val defaultMsg: String) {
  *
  * @param content The content of the request.
  * @param ipAddr The IP address from which the request originated.
+ * @param clientCert The client's X509 certificate, if present, or null otherwise.
  */
-data class Request (
+class Request (
     val content: String,
-    val ipAddr: SocketAddress
+    val ipAddr: SocketAddress,
+    val clientCerts: Collection<Certificate>
 ) {
     /**
      * java.net.URI object representing the requested URI, or null if we cannot initialise a URI object due to a badly

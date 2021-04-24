@@ -1,16 +1,19 @@
 package eu.bunburya.apogee
 
+import eu.bunburya.apogee.handlers.MainRequestHandler
+import eu.bunburya.apogee.handlers.RequestDecoder
+import eu.bunburya.apogee.handlers.ResponseEncoder
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.ChannelOption
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
+import io.netty.handler.ssl.ClientAuth
 import io.netty.handler.ssl.SslContextBuilder
-import java.io.FileInputStream
-import java.security.KeyStore
+import java.security.cert.X509Certificate
 import java.util.logging.Logger
-import javax.net.ssl.KeyManagerFactory
+import javax.net.ssl.X509TrustManager
 import kotlin.jvm.Throws
 
 private class GeminiChannelInitializer(private val config: Config): ChannelInitializer<SocketChannel>() {
@@ -25,17 +28,22 @@ private class GeminiChannelInitializer(private val config: Config): ChannelIniti
         val pipeline = ch.pipeline()
 
         // Add TLS handler
-        val keyStoreFile = config.KEY_STORE
-        val keyPass = config.KEY_PASS?.toCharArray()
-        val keyManagerFactory = KeyManagerFactory.getInstance("SunX509")
-        val keyStore = KeyStore.getInstance("PKCS12")
-        keyStore.load(FileInputStream(keyStoreFile), keyPass)
-        keyManagerFactory.init(keyStore, keyPass)
-        val sslCtx = SslContextBuilder.forServer(keyManagerFactory).build()
-        pipeline.addLast(
-            // SSH handler
-            sslCtx.newHandler(ch.alloc()),
 
+        val sslCtx = SslContextBuilder.forServer(config.CERT_FILE, config.KEY_FILE)
+            .trustManager(object: X509TrustManager {
+                // "Dummy" trust manager to accept all client certs (including self-signed certs).
+                // We can then decide what to do with the certs (ie, accept or reject) later on.
+                override fun getAcceptedIssuers(): Array<X509Certificate>? = arrayOf<X509Certificate>()
+                override fun checkClientTrusted(p0: Array<out X509Certificate>?, p1: String?) {}
+                override fun checkServerTrusted(p0: Array<out X509Certificate>?, p1: String?) {}
+            })
+            .clientAuth(ClientAuth.OPTIONAL)
+            .build()
+
+        // Add the SSL handler first, with a name so it can be accessed later on.
+        pipeline.addLast("ssl", sslCtx.newHandler(ch.alloc()))
+
+        pipeline.addLast(
             // Outbound handlers go first so inbound handlers can send Response directly back to clients if necessary
             ResponseEncoder(),
 

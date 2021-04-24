@@ -1,4 +1,4 @@
-package eu.bunburya.apogee
+package eu.bunburya.apogee.models
 
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled

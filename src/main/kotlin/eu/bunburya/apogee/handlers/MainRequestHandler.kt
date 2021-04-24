@@ -1,5 +1,7 @@
-package eu.bunburya.apogee
+package eu.bunburya.apogee.handlers
 
+import eu.bunburya.apogee.*
+import eu.bunburya.apogee.models.*
 import eu.bunburya.apogee.static.FileServer
 import io.netty.channel.ChannelFuture
 import io.netty.channel.ChannelFutureListener
@@ -38,6 +40,17 @@ class MainRequestHandler(private val config: Config): ChannelInboundHandlerAdapt
      * The main handler function which acts as a gateway to our business logic.
      */
     fun processRequest(request: Request): Response {
+
+        if (request.clientCerts!!.isNotEmpty()) {
+            println("Got certificates:")
+            for (c in request.clientCerts) {
+                println("${c.type} ${c.publicKey}")
+            }
+            return SuccessResponse("text/plain", "Hello", request)
+        }
+        else {
+            return ClientCertificateResponse("Need a cert", request)
+        }
 
         val validity = request.validity
         if (! validity.isValid) return BadRequestResponse(validity.defaultMsg, request)

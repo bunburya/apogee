@@ -1,6 +1,7 @@
 package eu.bunburya.apogee.static
 
 import eu.bunburya.apogee.*
+import eu.bunburya.apogee.models.*
 import io.netty.util.CharsetUtil
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream

@@ -1,5 +1,6 @@
 package eu.bunburya.apogee
 
+import eu.bunburya.apogee.models.Response
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
