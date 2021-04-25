@@ -2,6 +2,8 @@ package eu.bunburya.apogee.static
 
 import eu.bunburya.apogee.*
 import eu.bunburya.apogee.models.*
+import eu.bunburya.apogee.utils.getFilePath
+import eu.bunburya.apogee.utils.splitExt
 import io.netty.util.CharsetUtil
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
@@ -34,9 +36,8 @@ class FileServer(val config: Config) {
 
     private fun serveStaticFile(file: File, request: Request): Response {
         val path = file.path
-        val dotIndex = path.lastIndexOf('.')
-        val mimetype = if (dotIndex > 0 && path.substring(dotIndex+1) == config.GMI_EXT) "text/gemini"
-            else Files.probeContentType(file.toPath())
+        val (_, ext) = splitExt(path)
+        val mimetype = if (ext == config.GMI_EXT) "text/gemini" else Files.probeContentType(file.toPath())
         return SuccessResponse(mimetype, file.readBytes(), request)
     }
 
@@ -75,10 +76,8 @@ class FileServer(val config: Config) {
 
     fun serveResource(request: Request): Response {
         // Generate the path to work with
-        val path = request.uri?.path ?: return BadRequestResponse("Badly formed path.", request)
-        val targetPath = Paths.get(config.DOCUMENT_ROOT, path.replace('/', File.separatorChar))
-            .normalize()
-            .toAbsolutePath()
+        if (request.uri == null) return BadRequestResponse("Badly formed path.", request)
+        val targetPath = getFilePath(request, config)
         logger.fine("Got request for path: ${targetPath.toString()}")
 
         return serveStaticResource(targetPath, request)

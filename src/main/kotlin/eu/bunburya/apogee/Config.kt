@@ -3,6 +3,7 @@ package eu.bunburya.apogee
 import java.io.File
 import java.nio.file.Path
 import java.util.logging.*
+import java.util.regex.Pattern
 
 enum class DirectorySortMethod {
     NAME,
@@ -23,5 +24,5 @@ data class Config (
     val DIR_SORT_METHOD: DirectorySortMethod = DirectorySortMethod.NAME,
     val KEY_FILE: File? = null,
     val CERT_FILE: File? = null,
-    val clientCertZones: Map<Path, String> = mapOf()
+    val CLIENT_CERT_ZONES: Map<Pattern, String> = mapOf()
 )

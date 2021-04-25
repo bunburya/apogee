@@ -41,10 +41,10 @@ class MainRequestHandler(private val config: Config): ChannelInboundHandlerAdapt
      */
     fun processRequest(request: Request): Response {
 
-        if (request.clientCerts!!.isNotEmpty()) {
-            println("Got certificates:")
+        if (request.clientCerts.isNotEmpty()) {
+            println("Got certificates with SHA-256 hashes:")
             for (c in request.clientCerts) {
-                println("${c.type} ${c.publicKey}")
+                println(getCertHashString(c))
             }
             return SuccessResponse("text/plain", "Hello", request)
         }
