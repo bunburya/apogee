@@ -13,6 +13,12 @@ import java.nio.file.Files
 
 const val SEPARATOR = "::"
 
+enum class DirectorySortMethod {
+    NAME,
+    TIME,
+    SIZE
+}
+
 class DirectoryListingFactory(private val config: Config) {
 
     private val rootDir = File(config.DOCUMENT_ROOT)
@@ -29,6 +35,7 @@ class DirectoryListingFactory(private val config: Config) {
 
     fun directoryListing(directory: File, request: Request): Response {
         val parentPath = directory.parentFile.relativeTo(rootDir)
+        // TODO: Allow sort based on configuration
         val files = directory.listFiles()!!.sortedBy{ it.name }
         val lines = mutableListOf(
             "# Directory listing\n",

@@ -34,7 +34,7 @@ class FileServer(val config: Config) {
     private fun serveStaticFile(file: File, request: Request): Response {
         val path = file.path
         val (_, ext) = splitExt(path)
-        val mimetype = if (ext == config.GMI_EXT) "text/gemini" else Files.probeContentType(file.toPath())
+        val mimetype = if (ext == config.GEMINI_EXT) "text/gemini" else Files.probeContentType(file.toPath())
         return SuccessResponse(request, mimetype, file.readBytes())
     }
 
@@ -47,7 +47,7 @@ class FileServer(val config: Config) {
 
 
     private fun serveDirectory(file: File, request: Request): Response {
-        if (!file.canExecute()) return NotFoundResponse(request, config.NOT_FOUND_MSG)
+        if (!file.canExecute()) return NotFoundResponse(request)
         if (! request.content.endsWith('/'))
             return RedirectionResponse(request, "${request.content}/", true)
         val index = directoryIndex(file)
@@ -58,12 +58,12 @@ class FileServer(val config: Config) {
     private fun serveStaticResource(targetPath: Path, request: Request): Response {
         // Check that path is safe
         if (! pathIsSafe(targetPath))
-            return BadRequestResponse(request, config.NOT_FOUND_MSG)
+            return BadRequestResponse(request)
 
         // Check that resource exists and is readable
         val file = targetPath.toFile()
         if ((! (file.exists() && file.canRead())) || file.isHidden)
-            return NotFoundResponse(request, config.NOT_FOUND_MSG)
+            return NotFoundResponse(request)
 
         // Check if resource is a directory
         if (file.isDirectory) return serveDirectory(file, request)
@@ -73,7 +73,7 @@ class FileServer(val config: Config) {
 
     fun serveResource(request: Request): Response {
         // Generate the path to work with
-        if (request.uri == null) return BadRequestResponse(request, "Badly formed path.")
+        if (request.uri == null) return BadRequestResponse(request)
         val targetPath = getFilePath(request, config)
         logger.fine("Got request for path: ${targetPath.toString()}")
 

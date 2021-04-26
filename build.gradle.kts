@@ -18,7 +18,10 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
+    // https://mvnrepository.com/artifact/io.netty/netty-all
     implementation("io.netty", "netty-all", "4.1.63.Final")
+    // https://mvnrepository.com/artifact/com.moandjiezana.toml/toml4j
+    implementation("com.moandjiezana.toml", "toml4j", "0.7.2")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 }

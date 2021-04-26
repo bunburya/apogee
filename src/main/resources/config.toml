@@ -1,0 +1,53 @@
+## Basic settings
+
+PORT = 1965
+HOSTNAME = "localhost"
+CERT_FILE = "cert.pem"
+KEY_FILE = "key.pem"
+DOCUMENT_ROOT = "/var/gemini/"
+
+## Logging
+ACCESS_FILE = "/var/log/apogee/access.log"
+LOG_FILE = "/var/log/apogee/error.log"
+
+# What level of severity to log.
+# Must be one of SEVERE, WARNING, INFO, CONFIG, FINE, FINER, FINEST
+LOG_LEVEL = "FINE"
+
+## Static content
+GEMINI_EXT = "gmi"
+INDEX_FILE = "index.gmi"
+DIR_SORT_METHOD = "NAME"
+
+## Dynamic content (not implemented yet)
+
+CGI_PATHS = [
+    "/var/gemini/cgi-bin"
+]
+
+#[SCGI_PATHS]
+#"/scgi-path-1" = "/var/run/apogee/scgi1.sock"
+#"/scgi-path-2" = "/var/run/apogee/scgi2.sock"
+
+## MIME type overrides (not implemented yet)
+
+#"atom.xml$" = "application/atom+xml"
+#"rss.xml$" = "application/rss+xml"
+
+## Redirects (not implemented yet)
+#
+#[TEMP_REDIRECTS]
+#"/old/path/file.ext" = "/new/path/file.ext"
+#[PERM_REDIRECTS]
+#"/old/path/file.ext" = "/new/path/file.ext"
+#
+## Certificate zones (not fully implemented yet)
+#
+#[CLIENT_CERT_ZONES]
+#"^/secure-zone-1/" = [
+#	"**SHA-256 HASH**",
+#]
+#"^/secure-zone-2/" = [
+#	"**SHA-256 HASH**",
+#	"**SHA-256 HASH**",
+#]

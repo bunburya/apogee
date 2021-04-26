@@ -8,6 +8,7 @@ import java.security.cert.Certificate
 import java.security.cert.CertificateExpiredException
 import java.security.cert.CertificateNotYetValidException
 import java.security.cert.X509Certificate
+import java.util.regex.Pattern
 
 /**
  * Constants representing the possible results of checking whether the client has sent the required certificates for a
@@ -50,6 +51,12 @@ fun getCertHashString(cert: Certificate): String = getHexString(getCertHash(cert
 
 class ClientAuthHandler(private val config: Config): BaseInboundHandler() {
 
+    val patterns: Map<Pattern, String> by lazy {
+        val p = mutableMapOf<Pattern, String>()
+        for ((k, v) in config.CLIENT_CERT_ZONES) p[Pattern.compile(k)] = v
+        p.toMap()
+    }
+
     /**
      * Check if a certificate is valid (as distinct from authenticated).
      */
@@ -91,7 +98,7 @@ class ClientAuthHandler(private val config: Config): BaseInboundHandler() {
         var validMatchingCerts = 0
 
         // Iterate through the pattern-hash combinations specified in the config
-        for ((pattern, hash) in config.CLIENT_CERT_ZONES) {
+        for ((pattern, hash) in patterns) {
             // Check if the current pattern matches the request
             if (pattern.matcher(request.content).find()) {
                 matchedPatterns++

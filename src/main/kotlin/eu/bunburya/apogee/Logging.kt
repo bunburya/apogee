@@ -46,8 +46,8 @@ fun configureLogging(config: Config) {
     else rootLogger.addHandler(ConsoleHandler())
 
     // Set desired log level
-    rootLogger.level = config.LOG_LEVEL
-    for (handler in rootLogger.handlers) handler.level = config.LOG_LEVEL
+    rootLogger.level = Level.parse(config.LOG_LEVEL)
+    for (handler in rootLogger.handlers) handler.level = Level.parse(config.LOG_LEVEL)
 
 
 }

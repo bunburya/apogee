@@ -11,6 +11,7 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.ssl.ClientAuth
 import io.netty.handler.ssl.SslContextBuilder
+import java.io.File
 import java.security.cert.X509Certificate
 import java.util.logging.Logger
 import javax.net.ssl.X509TrustManager
@@ -28,7 +29,7 @@ private class GeminiChannelInitializer(private val config: Config): ChannelIniti
         val pipeline = ch.pipeline()
 
         // Build SSL context
-        val sslCtx = SslContextBuilder.forServer(config.CERT_FILE, config.KEY_FILE)
+        val sslCtx = SslContextBuilder.forServer(File(config.CERT_FILE), File(config.KEY_FILE))
             .trustManager(object: X509TrustManager {
                 // "Dummy" trust manager to accept all client certs (including self-signed certs).
                 // We can then decide what to do with the certs (ie, accept or reject) later on.

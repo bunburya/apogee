@@ -1,19 +1,17 @@
 package eu.bunburya.apogee
 
 import java.io.File
+import java.nio.file.Paths
 import java.util.logging.Level
+import java.util.regex.Pattern
 
-fun main() {
-    val config = Config(
-        "/home/alan/bin/apogee/src/test/resources/srv/capsule",
-        "localhost",
-        1965,
-        null,
-        Level.FINE,
-        null,
-        KEY_FILE = File("/home/alan/bin/apogee/src/test/resources/server_certs/openssl_generated/test_key.pem"),
-        CERT_FILE = File("/home/alan/bin/apogee/src/test/resources/server_certs/openssl_generated/test_cert.pem")
-    )
+/**
+ * Main function to run the server; currently, this initialises a test setup.
+ * TODO: Move config data out of this file.
+ */
+
+fun main(args: Array<String>) {
+    val config = Config.fromTomlFile(File(args[1]))
     configureLogging(config)
     val server = GeminiServer(config)
     server.run()

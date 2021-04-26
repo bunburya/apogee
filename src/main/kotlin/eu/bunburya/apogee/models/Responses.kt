@@ -15,7 +15,7 @@ val UTF_8_CRLF = byteArrayOf(13, 10)
  */
 
 /**
- * Base class for responses to requests on the server.
+ * Base class for all responses to requests on the server.
  *
  * @param statusCode The (full) status code of the response.
  * @param meta The data that follows the status code (after the space).
@@ -28,7 +28,6 @@ abstract class Response(
     val request: Request,
     val body: ByteArray? = null
 ) {
-
     private val logger = Logger.getLogger(javaClass.name)
 
     /**
