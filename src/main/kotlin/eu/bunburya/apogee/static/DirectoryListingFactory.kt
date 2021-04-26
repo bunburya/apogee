@@ -44,7 +44,7 @@ class DirectoryListingFactory(private val config: Config) {
         }
         bytes.flush()
         println(bytes.toString())
-        return SuccessResponse("text/gemini", bytes.toByteArray(), request)
+        return SuccessResponse(request, "text/gemini", bytes.toByteArray())
 
     }
 

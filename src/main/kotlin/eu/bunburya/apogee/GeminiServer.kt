@@ -1,6 +1,6 @@
 package eu.bunburya.apogee
 
-import eu.bunburya.apogee.handlers.MainRequestHandler
+import eu.bunburya.apogee.handlers.StaticFileHandler
 import eu.bunburya.apogee.handlers.RequestDecoder
 import eu.bunburya.apogee.handlers.ResponseEncoder
 import io.netty.bootstrap.ServerBootstrap
@@ -27,8 +27,7 @@ private class GeminiChannelInitializer(private val config: Config): ChannelIniti
 
         val pipeline = ch.pipeline()
 
-        // Add TLS handler
-
+        // Build SSL context
         val sslCtx = SslContextBuilder.forServer(config.CERT_FILE, config.KEY_FILE)
             .trustManager(object: X509TrustManager {
                 // "Dummy" trust manager to accept all client certs (including self-signed certs).
@@ -45,13 +44,13 @@ private class GeminiChannelInitializer(private val config: Config): ChannelIniti
 
         pipeline.addLast(
             // Outbound handlers go first so inbound handlers can send Response directly back to clients if necessary
-            ResponseEncoder(),
+            ResponseEncoder(getAccessLogger(config)),
 
             // Inbound handlers
             RequestDecoder(),
 
             // The main request handler with our business logic should always be last in the pipeline
-            MainRequestHandler(config),
+            StaticFileHandler(config),
         )
 
         logger.fine("All handlers added.")

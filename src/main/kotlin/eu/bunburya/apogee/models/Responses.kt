@@ -66,9 +66,9 @@ abstract class NonErrorResponse(
  * @param sensitive Whether the input is sensitive (ie, not to be echoed to the screen).
  */
 class InputResponse(
+    request: Request,
     val prompt: String,
-    val sensitive: Boolean = false,
-    request: Request
+    val sensitive: Boolean = false
 ): NonErrorResponse(if (sensitive) 11 else 11, prompt, request)
 
 /**
@@ -78,12 +78,12 @@ class InputResponse(
  * @param body The main data to be returned.
  */
 class SuccessResponse(
+    request: Request,
     val mimetype: String,
-    body: ByteArray,
-    request: Request
+    body: ByteArray
 ): NonErrorResponse(20, mimetype, request, body) {
     constructor(mimetype: String, body: String, request: Request):
-            this(mimetype, body.toByteArray(CharsetUtil.UTF_8), request)
+            this(request, mimetype, body.toByteArray(CharsetUtil.UTF_8))
 }
 
 /**
@@ -93,9 +93,9 @@ class SuccessResponse(
  * @param permanent Whether the redirection is permanent as opposed to temporary.
  */
 class RedirectionResponse(
+    request: Request,
     val uri: String,
-    val permanent: Boolean,
-    request: Request
+    val permanent: Boolean
 ): NonErrorResponse(if (permanent) 31 else 30, uri, request)
 
 /**
@@ -106,8 +106,8 @@ class RedirectionResponse(
  * @param subStatusCode An integer corresponding to the second digit of the response status code.
  */
 abstract class ErrorResponse(
-    errorMessage: String? = null,
     request: Request,
+    errorMessage: String? = null,
     baseStatusCode: Int,
     subStatusCode: Int
 ): Response(baseStatusCode + subStatusCode, errorMessage, request)
@@ -119,42 +119,42 @@ abstract class ErrorResponse(
  * This class also acts as a base class for all temporary failure response classes.
  */
 open class TemporaryFailureResponse(
-    errorMessage: String? = null,
     request: Request,
+    errorMessage: String? = null,
     subStatusCode: Int = 0,
-): ErrorResponse(errorMessage, request, 40,subStatusCode)
+): ErrorResponse(request, errorMessage, 40, subStatusCode)
 
 /**
  * Server currently unavailable.
  */
 class ServerUnavailableResponse(
-    errorMessage: String? = null,
-    request: Request
-): TemporaryFailureResponse(errorMessage, request, 1)
+    request: Request,
+    errorMessage: String? = "Server unavailable"
+): TemporaryFailureResponse(request, errorMessage, 1)
 
 /**
  * A CGI process, or similar system for generating dynamic content, died unexpectedly or timed out.
  */
 class CGIErrorResponse(
-    errorMessage: String? = null,
-    request: Request
-): TemporaryFailureResponse(errorMessage, request, 2)
+    request: Request,
+    errorMessage: String? = "CGI error"
+): TemporaryFailureResponse(request, errorMessage, 2)
 
 /**
  * Proxy request failed.
  */
 class ProxyErrorResponse(
-    errorMessage: String? = null,
-    request: Request
-): TemporaryFailureResponse(errorMessage, request, 3)
+    request: Request,
+    errorMessage: String? = "Proxy error"
+): TemporaryFailureResponse(request, errorMessage, 3)
 
 /**
  * Client should slow down requests.
  */
 class SlowDownResponse(
-    errorMessage: String? = null,
-    request: Request
-): TemporaryFailureResponse(errorMessage, request, 4)
+    request: Request,
+    errorMessage: String? = "Slow down"
+): TemporaryFailureResponse(request, errorMessage, 4)
 
 
 /**
@@ -166,66 +166,66 @@ class SlowDownResponse(
  * @param subStatusCode An integer corresponding to the second digit of the status code.
  */
 open class PermanentFailureResponse(
-    errorMessage: String? = null,
     request: Request,
+    errorMessage: String? = "Permanent failure",
     private val subStatusCode: Int = 0,
-): ErrorResponse(errorMessage, request, 50, subStatusCode)
+): ErrorResponse(request, errorMessage, 50, subStatusCode)
 
 /**
  * Resource not found.
  */
 class NotFoundResponse(
-    errorMessage: String? = null,
-    request: Request
-): PermanentFailureResponse(errorMessage, request, 1)
+    request: Request,
+    errorMessage: String? = "Not found"
+): PermanentFailureResponse(request, errorMessage, 1)
 
 /**
  * Resource no longer available and will not be available again.
  */
 class GoneResponse(
-    errorMessage: String? = null,
-    request: Request
-): PermanentFailureResponse(errorMessage, request, 2)
+    request: Request,
+    errorMessage: String? = "Gone"
+): PermanentFailureResponse(request, errorMessage, 2)
 
 /**
  * Resource requested is at a different domain and server does not accept proxy requests.
  */
 class ProxyRequestRefusedResponse(
-    errorMessage: String? = null,
-    request: Request
-): PermanentFailureResponse(errorMessage, request, 3)
+    request: Request,
+    errorMessage: String? = "Proxy request refused"
+): PermanentFailureResponse(request, errorMessage, 3)
 
 /**
  * Request is bad.
  */
 class BadRequestResponse(
-    errorMessage: String? = null,
-    request: Request
-): PermanentFailureResponse(errorMessage, request, 9)
+    request: Request,
+    errorMessage: String? = "Bad request"
+): PermanentFailureResponse(request, errorMessage, 9)
 
 /**
  * Requested resource requires a client certificate to access.
  *
  * This class also acts as a base class for all client certificate response classes.
  */
-open class ClientCertificateResponse(
-    errorMessage: String? = null,
+open class ClientCertNeededResponse(
     request: Request,
+    errorMessage: String? = "Client certificate needed",
     subStatusCode: Int = 0
-): ErrorResponse(errorMessage, request, 60, subStatusCode)
+): ErrorResponse(request, errorMessage, 60, subStatusCode)
 
 /**
  * Certificate not authorised.
  */
-class CertificateNotAuthorizedResponse(
-    errorMessage: String? = null,
-    request: Request
-): ClientCertificateResponse(errorMessage, request, 1)
+class ClientCertNotAuthorizedResponse(
+    request: Request,
+    errorMessage: String? = "Client certificate not authorised"
+): ClientCertNeededResponse(request, errorMessage, 1)
 
 /**
  * Certificate not valid (ie, there is a problem with the certificate itself).
  */
-class CertificateNotValidResponse(
-    errorMessage: String? = null,
-    request: Request
-): ClientCertificateResponse(errorMessage, request, 2)
+class ClientCertNotValidResponse(
+    request: Request,
+    errorMessage: String? = "Client certificate not valid"
+): ClientCertNeededResponse(request, errorMessage, 2)
