@@ -37,12 +37,10 @@ class Request (
      * java.net.URI object representing the requested URI, or null if we cannot initialise a URI object due to a badly
      * formed request.
      */
-    val uri: URI? by lazy {
-        try {
-            URI(content)
-        } catch (e: URISyntaxException) {
-            null
-        }
+    val uri: URI? = try {
+        URI(content)
+    } catch (e: URISyntaxException) {
+        null
     }
 
     /**

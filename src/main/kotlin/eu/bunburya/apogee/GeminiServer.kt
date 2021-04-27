@@ -1,5 +1,6 @@
 package eu.bunburya.apogee
 
+import eu.bunburya.apogee.handlers.ClientAuthHandler
 import eu.bunburya.apogee.handlers.StaticFileHandler
 import eu.bunburya.apogee.handlers.RequestDecoder
 import eu.bunburya.apogee.handlers.ResponseEncoder
@@ -21,39 +22,37 @@ private class GeminiChannelInitializer(private val config: Config): ChannelIniti
 
     private val logger = Logger.getLogger(javaClass.name)
 
+    // Build SSL context
+    private val sslCtx = SslContextBuilder.forServer(File(config.CERT_FILE), File(config.KEY_FILE))
+        .trustManager(object: X509TrustManager {
+            // "Dummy" trust manager to accept all client certs (including self-signed certs).
+            // We can then decide what to do with the certs (ie, accept or reject) later on.
+            override fun getAcceptedIssuers(): Array<X509Certificate>? = arrayOf<X509Certificate>()
+            override fun checkClientTrusted(p0: Array<out X509Certificate>?, p1: String?) {}
+            override fun checkServerTrusted(p0: Array<out X509Certificate>?, p1: String?) {}
+        })
+        .clientAuth(ClientAuth.OPTIONAL)
+        .build()
+
     @Throws(Exception::class)
     override fun initChannel(ch: SocketChannel) {
 
         logger.fine("Initialising channel.")
 
-        val pipeline = ch.pipeline()
+        // TODO: Consider whether we should build static instances of handlers and re-use them, rather than initialising
+        // new handlers for every request.
 
-        // Build SSL context
-        val sslCtx = SslContextBuilder.forServer(File(config.CERT_FILE), File(config.KEY_FILE))
-            .trustManager(object: X509TrustManager {
-                // "Dummy" trust manager to accept all client certs (including self-signed certs).
-                // We can then decide what to do with the certs (ie, accept or reject) later on.
-                override fun getAcceptedIssuers(): Array<X509Certificate>? = arrayOf<X509Certificate>()
-                override fun checkClientTrusted(p0: Array<out X509Certificate>?, p1: String?) {}
-                override fun checkServerTrusted(p0: Array<out X509Certificate>?, p1: String?) {}
-            })
-            .clientAuth(ClientAuth.OPTIONAL)
-            .build()
+        val pipeline = ch.pipeline()
 
         // Add the SSL handler first, with a name so it can be accessed later on.
         pipeline.addLast("ssl", sslCtx.newHandler(ch.alloc()))
-
         pipeline.addLast(
             // Outbound handlers go first so inbound handlers can send Response directly back to clients if necessary
             ResponseEncoder(getAccessLogger(config)),
-
-            // Inbound handlers
             RequestDecoder(),
-
-            // The main request handler with our business logic should always be last in the pipeline
-            StaticFileHandler(config),
         )
-
+        if (config.CLIENT_CERT_ZONES.isNotEmpty()) pipeline.addLast(ClientAuthHandler(config))
+        pipeline.addLast(StaticFileHandler(config))
         logger.fine("All handlers added.")
     }
 
@@ -77,7 +76,7 @@ class GeminiServer(private val config: Config) {
                 childOption(ChannelOption.SO_KEEPALIVE, true)
             }
 
-            logger.fine("Server bootstrapped; beginning bind.")
+            logger.fine("Server bootstrapped; binding to port ${config.PORT} on ${config.HOSTNAME}.")
 
             // Bind and start to accepting incoming connections.
             val future = bootstrap.bind(config.HOSTNAME, config.PORT).sync()

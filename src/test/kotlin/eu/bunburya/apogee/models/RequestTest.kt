@@ -1,9 +1,8 @@
-package eu.bunburya.apogee
+package eu.bunburya.apogee.models
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.net.InetSocketAddress
-import java.net.SocketAddress
 
 internal class RequestTest {
 
@@ -44,7 +43,7 @@ internal class RequestTest {
     fun testRequestValidation() {
         var request: Request
         for ((uri, validity) in expected) {
-            request = Request(uri, dummySocketAddress)
+            request = Request(uri, dummySocketAddress, listOf())
             assertEquals(validity, request.validity)
         }
     }

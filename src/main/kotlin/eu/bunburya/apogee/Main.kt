@@ -11,7 +11,7 @@ import java.util.regex.Pattern
  */
 
 fun main(args: Array<String>) {
-    val config = Config.fromTomlFile(File(args[1]))
+    val config = Config.fromTomlFile(File(args[0]))
     configureLogging(config)
     val server = GeminiServer(config)
     server.run()

@@ -22,7 +22,6 @@ Application logic:
  */
 class StaticFileHandler(private val config: Config): BaseInboundHandler() {
 
-    private val accessLogger = getAccessLogger(config)
     private val fileServer = FileServer(config)
 
     /**

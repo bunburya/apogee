@@ -51,11 +51,7 @@ fun getCertHashString(cert: Certificate): String = getHexString(getCertHash(cert
 
 class ClientAuthHandler(private val config: Config): BaseInboundHandler() {
 
-    val patterns: Map<Pattern, String> by lazy {
-        val p = mutableMapOf<Pattern, String>()
-        for ((k, v) in config.CLIENT_CERT_ZONES) p[Pattern.compile(k)] = v
-        p.toMap()
-    }
+    private val patterns = compileKeys(config.CLIENT_CERT_ZONES)
 
     /**
      * Check if a certificate is valid (as distinct from authenticated).
@@ -98,20 +94,28 @@ class ClientAuthHandler(private val config: Config): BaseInboundHandler() {
         var validMatchingCerts = 0
 
         // Iterate through the pattern-hash combinations specified in the config
-        for ((pattern, hash) in patterns) {
+        for ((pattern, allowedHashes) in patterns) {
             // Check if the current pattern matches the request
-            if (pattern.matcher(request.content).find()) {
+            logger.fine("Testing request ${request.uri!!.path} against pattern $pattern")
+            if (pattern.matcher(request.uri!!.path).find()) {
+                logger.fine("Matched pattern.")
                 matchedPatterns++
                 // Iterate through the client certificates
                 for (cert in request.clientCerts) {
+                    val certHash = getCertHashString(cert)
+                    logger.fine("Found cert with hash $certHash.")
                     // Check if the current certificate's hash matches the specified one
-                    if (getCertHashString(cert) == hash) {
-                        matchingCerts++
-                        if (certIsValid(cert)) validMatchingCerts++
-                        break
+                    for (hash in allowedHashes) {
+                        logger.fine("Checking client hash $certHash against allowed hash $hash")
+                        if (getCertHashString(cert) == hash) {
+                            logger.fine("Cert matched.")
+                            matchingCerts++
+                            if (certIsValid(cert)) validMatchingCerts++
+                            break
+                        } else logger.fine("No match.")
                     }
                 }
-            }
+            } else logger.fine("Not matched.")
         }
 
         // We should not have more authenticated patterns than matched patterns, or more matching certs than valid

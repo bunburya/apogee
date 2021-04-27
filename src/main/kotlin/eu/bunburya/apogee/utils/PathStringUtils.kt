@@ -52,6 +52,12 @@ fun fileIsInDirectory(filePath: String, dirPath: String): Boolean {
 fun getFilePath(request: Request, config: Config): Path {
     require(request.uri != null)
     return Paths.get(config.DOCUMENT_ROOT, request.uri!!.path.replace('/', File.separatorChar))
-        .normalize()
         .toAbsolutePath()
 }
+
+/**
+ * Convert the content to a request to an absolute file path which is
+ * resolved to remove redundant parts, including "..". Therefore, the
+ * resulting file path may not be within the document root.
+ */
+fun resolvePath(request: Request, config: Config): Path = getFilePath(request, config).normalize()

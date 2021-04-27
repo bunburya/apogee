@@ -11,6 +11,13 @@ import java.util.logging.Logger
 import javax.net.ssl.SSLPeerUnverifiedException
 import java.security.cert.Certificate
 
+// TODO: Make RequestDecoder write back a BadRequestResponse if the Request has a null URI.
+// This may require refactoring so that RequestDecoder can "inherit" from both DelimiterBasedFrameDecoder and
+// BaseInboundHandler (by composition).
+// Once this is done, consider splitting Request into BadRequest (with a null URI) and GoodRequest (with a non-null
+// URI), the former being used only to write BadRequestResponse back to the client, so that the subsequent handlers in
+// the pipeline will also be working with a non-null URI.
+
 /**
  * Decodes inbound requests, converting them to Request objects.
  */

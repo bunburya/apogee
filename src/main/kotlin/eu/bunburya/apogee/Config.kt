@@ -2,10 +2,7 @@ package eu.bunburya.apogee
 
 import com.moandjiezana.toml.Toml
 import java.io.File
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.util.logging.*
-import java.util.regex.Pattern
+import kotlin.jvm.Throws
 
 class ConfigError(msg: String): Exception(msg)
 
@@ -37,18 +34,26 @@ data class Config (
     val TEMP_REDIRECTS: Map<String, String> = defaults.TEMP_REDIRECTS,
     val PERM_REDIRECTS: Map<String, String> = defaults.PERM_REDIRECTS,
 
-    val CLIENT_CERT_ZONES: Map<String, String> = defaults.CLIENT_CERT_ZONES,
+    val CLIENT_CERT_ZONES: Map<String, Collection<String>> = defaults.CLIENT_CERT_ZONES,
 ) {
     companion object {
 
         /**
-         * Convert a map created from a TOML table (which is a Map<String, Any>) to a Map<String, String>
+         * Convert a map created from a TOML table (which is a Map<String, Any>) to a Map<String, valueType>.
+         * Will throw a ConfigError if values cannot be cast to valueType.
+         *
+         * Also strip surrounding quotes from the key.
          */
-        private fun tableToStringMap(table: Toml?, default: Map<String, String>): Map<String, String> {
+        @Throws(ClassCastException::class)
+        private fun <valueType> tableToMap(table: Toml?, default: Map<String, valueType>): Map<String, valueType> {
             if (table == null) return default
             val inMap = table.toMap()
-            val outMap: MutableMap<String, String> = mutableMapOf()
-            for ((k, v) in inMap) outMap[k] = v.toString()
+            val outMap: MutableMap<String, valueType> = mutableMapOf()
+            try {
+                for ((k, v) in inMap) outMap[k.removeSurrounding("\"")] = v as valueType
+            } catch (e: ClassCastException) {
+                throw ConfigError("Error trying to parse map from config file: ${e.message}")
+            }
             return outMap.toMap()
         }
 
@@ -91,11 +96,11 @@ data class Config (
                 INDEX_FILE = toml.getString("INDEX_FILE", defaults.INDEX_FILE),
                 DIR_SORT_METHOD = toml.getString("DIR_SORT_METHOD", defaults.DIR_SORT_METHOD),
                 CGI_PATHS = toml.getList("CGI_PATHS", defaults.CGI_PATHS),
-                SCGI_PATHS = tableToStringMap(toml.getTable("SCGI_PATHS"), defaults.SCGI_PATHS),
-                MIME_OVERRIDES = tableToStringMap(toml.getTable("MIME_OVERRIDES"), defaults.MIME_OVERRIDES),
-                TEMP_REDIRECTS = tableToStringMap(toml.getTable("TEMP_REDIRECTS"), defaults.TEMP_REDIRECTS),
-                PERM_REDIRECTS = tableToStringMap(toml.getTable("PERM_REDIRECTS"), defaults.PERM_REDIRECTS),
-                CLIENT_CERT_ZONES = tableToStringMap(toml.getTable("CLIENT_CERT_ZONES"), defaults.CLIENT_CERT_ZONES),
+                SCGI_PATHS = tableToMap(toml.getTable("SCGI_PATHS"), defaults.SCGI_PATHS),
+                MIME_OVERRIDES = tableToMap(toml.getTable("MIME_OVERRIDES"), defaults.MIME_OVERRIDES),
+                TEMP_REDIRECTS = tableToMap(toml.getTable("TEMP_REDIRECTS"), defaults.TEMP_REDIRECTS),
+                PERM_REDIRECTS = tableToMap(toml.getTable("PERM_REDIRECTS"), defaults.PERM_REDIRECTS),
+                CLIENT_CERT_ZONES = tableToMap(toml.getTable("CLIENT_CERT_ZONES"), defaults.CLIENT_CERT_ZONES),
             )
         }
     }
