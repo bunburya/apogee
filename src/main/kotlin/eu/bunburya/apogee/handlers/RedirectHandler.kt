@@ -15,6 +15,9 @@ class RedirectHandler(
 
     override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
         val request = msg as Request
+        for ((pattern, path) in tempRedirects) {
+
+        }
 
     }
 

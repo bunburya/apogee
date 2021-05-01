@@ -48,7 +48,11 @@ class RequestDecoder: DelimiterBasedFrameDecoder(
             clientCerts
         )
 
-        return if (request.isValid) request else writeResponse(ctx, BadRequestResponse(request))
+        if (request.isValid) return request
+        else {
+            writeResponse(ctx, BadRequestResponse(request))
+            return null
+        }
 
     }
 

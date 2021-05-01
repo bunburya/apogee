@@ -75,18 +75,20 @@ class ClientAuthHandler(private val config: Config): ChannelInboundHandlerAdapte
     }
 
     /**
-     * Check if a request is permitted on the basis of its client certificates. The path specified in the request is
+     * Check if a request is permitted on the basis of its client certificate. The path specified in the request is
      * compared against each pattern-hash pair specified in the config.
      *
-     * Where a client provides multiple certificates, it will be considered to be authenticated with respect to a
-     * pattern if any of its (valid) certificates matches the corresponding hash. However, where the requested path
-     * matches multiple patterns, it must be authenticated with respect to each matching pattern in order to be allowed.
+     * Where a client provides multiple certificates, we only check the first one (as the others will be authority
+     * certs). Where the requested path matches multiple patterns, it must be authenticated with respect to each
+     * matching pattern in order to be allowed.
      *
      * @return A constant of type ClientCertStatus, representing the result of the check.
      */
     private fun requestIsAllowed(request: Request): ClientCertStatus {
 
         val numCerts = request.clientCerts.size
+
+        val clientCert = if (request.clientCerts.isNotEmpty()) request.clientCerts[0] else null
 
         // The number of patterns which match the given path (indicating that the path is in a protected zone).
         // We increment this each time a pattern matches.
@@ -106,20 +108,18 @@ class ClientAuthHandler(private val config: Config): ChannelInboundHandlerAdapte
             if (pattern.matcher(request.uri!!.path).find()) {
                 logger.fine("Matched pattern.")
                 matchedPatterns++
-                // Iterate through the client certificates
-                for (cert in request.clientCerts) {
-                    val certHash = getCertHashString(cert)
-                    logger.fine("Found cert with hash $certHash.")
-                    // Check if the current certificate's hash matches the specified one
-                    for (hash in allowedHashes) {
-                        logger.fine("Checking client hash $certHash against allowed hash $hash")
-                        if (getCertHashString(cert) == hash) {
-                            logger.fine("Cert matched.")
-                            matchingCerts++
-                            if (certIsValid(cert)) validMatchingCerts++
-                            break
-                        } else logger.fine("No match.")
-                    }
+                if (clientCert == null) return ClientCertStatus.NO_CERT
+                val certHash = getCertHashString(clientCert)
+                logger.fine("Found cert with hash $certHash.")
+                // Check if the certificate's hash matches the specified one
+                for (hash in allowedHashes) {
+                    logger.fine("Checking client hash $certHash against allowed hash $hash")
+                    if (certHash == hash) {
+                        logger.fine("Cert matched.")
+                        matchingCerts++
+                        if (certIsValid(clientCert)) validMatchingCerts++
+                        break
+                    } else logger.fine("No match.")
                 }
             } else logger.fine("Not matched.")
         }

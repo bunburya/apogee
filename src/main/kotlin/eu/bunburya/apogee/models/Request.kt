@@ -31,7 +31,7 @@ enum class RequestValidity(val isValid: Boolean, val defaultMsg: String) {
 class Request (
     val content: String,
     val ipAddr: SocketAddress,
-    val clientCerts: Collection<Certificate>
+    val clientCerts: List<Certificate>
 ) {
     /**
      * java.net.URI object representing the requested URI, or null if we cannot initialise a URI object due to a badly
