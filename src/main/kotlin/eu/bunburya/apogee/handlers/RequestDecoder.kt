@@ -1,6 +1,8 @@
 package eu.bunburya.apogee.handlers
 
+import eu.bunburya.apogee.models.BadRequestResponse
 import eu.bunburya.apogee.models.Request
+import eu.bunburya.apogee.utils.writeResponse
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.DelimiterBasedFrameDecoder
@@ -11,12 +13,9 @@ import java.util.logging.Logger
 import javax.net.ssl.SSLPeerUnverifiedException
 import java.security.cert.Certificate
 
-// TODO: Make RequestDecoder write back a BadRequestResponse if the Request has a null URI.
-// This may require refactoring so that RequestDecoder can "inherit" from both DelimiterBasedFrameDecoder and
-// BaseInboundHandler (by composition).
-// Once this is done, consider splitting Request into BadRequest (with a null URI) and GoodRequest (with a non-null
-// URI), the former being used only to write BadRequestResponse back to the client, so that the subsequent handlers in
-// the pipeline will also be working with a non-null URI.
+// TODO: consider splitting Request into BadRequest (with a null URI) and GoodRequest (with a non-null URI), the former
+// being used only to write BadRequestResponse back to the client, so that the subsequent handlers in the pipeline will
+// also be working with a non-null URI.
 
 /**
  * Decodes inbound requests, converting them to Request objects.
@@ -41,15 +40,16 @@ class RequestDecoder: DelimiterBasedFrameDecoder(
         } catch (e: SSLPeerUnverifiedException) {
             logger.fine("Peer not authenticated.")
         }
-        val byteBuf = super.decode(ctx, buffer) as ByteBuf?
+        val byteBuf = super.decode(ctx, buffer) as ByteBuf? ?: return null
 
-        return if (byteBuf != null) {
-            Request(
-                byteBuf.toString(CharsetUtil.UTF_8),
-                ctx.channel().remoteAddress(),
-                clientCerts
-            )
-        } else null
+        val request = Request(
+            byteBuf.toString(CharsetUtil.UTF_8),
+            ctx.channel().remoteAddress(),
+            clientCerts
+        )
+
+        return if (request.isValid) request else writeResponse(ctx, BadRequestResponse(request))
+
     }
 
 }

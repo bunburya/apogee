@@ -73,6 +73,7 @@ class GeminiServer(private val config: Config) {
                 channel(NioServerSocketChannel::class.java)
                 childHandler(GeminiChannelInitializer(config))
                 option(ChannelOption.SO_BACKLOG, 128)
+                // TODO: Consider whether we actually want KEEPALIVE
                 childOption(ChannelOption.SO_KEEPALIVE, true)
             }
 

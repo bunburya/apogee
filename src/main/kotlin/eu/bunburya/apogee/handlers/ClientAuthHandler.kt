@@ -2,12 +2,16 @@ package eu.bunburya.apogee.handlers
 
 import eu.bunburya.apogee.Config
 import eu.bunburya.apogee.models.*
+import eu.bunburya.apogee.utils.compileKeys
+import eu.bunburya.apogee.utils.writeResponse
 import io.netty.channel.ChannelHandlerContext
+import io.netty.channel.ChannelInboundHandlerAdapter
 import java.security.MessageDigest
 import java.security.cert.Certificate
 import java.security.cert.CertificateExpiredException
 import java.security.cert.CertificateNotYetValidException
 import java.security.cert.X509Certificate
+import java.util.logging.Logger
 import java.util.regex.Pattern
 
 /**
@@ -49,9 +53,11 @@ private fun getCertHash(cert: Certificate): ByteArray {
 fun getCertHashString(cert: Certificate): String = getHexString(getCertHash(cert))
 
 
-class ClientAuthHandler(private val config: Config): BaseInboundHandler() {
+class ClientAuthHandler(private val config: Config): ChannelInboundHandlerAdapter() {
 
+    private val logger = Logger.getLogger(javaClass.name)
     private val patterns = compileKeys(config.CLIENT_CERT_ZONES)
+
 
     /**
      * Check if a certificate is valid (as distinct from authenticated).
@@ -151,7 +157,7 @@ class ClientAuthHandler(private val config: Config): BaseInboundHandler() {
                     request,
                     "Unspecified error when authenticating client certificates. " +
                             "This has been logged on the server side."
-                )
+                ),
             )
         }
 

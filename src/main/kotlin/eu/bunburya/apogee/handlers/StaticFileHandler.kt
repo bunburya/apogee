@@ -3,7 +3,10 @@ package eu.bunburya.apogee.handlers
 import eu.bunburya.apogee.*
 import eu.bunburya.apogee.models.*
 import eu.bunburya.apogee.static.FileServer
+import eu.bunburya.apogee.utils.writeResponse
 import io.netty.channel.ChannelHandlerContext
+import io.netty.channel.ChannelInboundHandlerAdapter
+import java.util.logging.Logger
 
 /*
 Application logic:
@@ -20,8 +23,9 @@ Application logic:
 /**
  * The main handler object that handles successful inbound requests and determines the appropriate response.
  */
-class StaticFileHandler(private val config: Config): BaseInboundHandler() {
+class StaticFileHandler(private val config: Config): ChannelInboundHandlerAdapter() {
 
+    private val logger = Logger.getLogger(javaClass.name)
     private val fileServer = FileServer(config)
 
     /**

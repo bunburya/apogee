@@ -56,11 +56,11 @@ class Request (
     val validity: RequestValidity by lazy {
         when {
             uri == null -> RequestValidity.BAD_REQUEST
-            uri!!.scheme != "gemini" -> RequestValidity.NOT_GEMINI_URI
+            uri.scheme != "gemini" -> RequestValidity.NOT_GEMINI_URI
             content.toByteArray().size > 1024 -> RequestValidity.URI_TOO_LARGE
-            uri!!.host == null -> RequestValidity.NO_HOST
-            uri!!.userInfo != null -> RequestValidity.USERINFO
-            uri!!.fragment != null -> RequestValidity.FRAGMENT
+            uri.host == null -> RequestValidity.NO_HOST
+            uri.userInfo != null -> RequestValidity.USERINFO
+            uri.fragment != null -> RequestValidity.FRAGMENT
             else -> RequestValidity.OK
         }
     }
