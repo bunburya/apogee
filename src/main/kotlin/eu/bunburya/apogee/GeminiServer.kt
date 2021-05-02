@@ -1,9 +1,6 @@
 package eu.bunburya.apogee
 
-import eu.bunburya.apogee.handlers.ClientAuthHandler
-import eu.bunburya.apogee.handlers.StaticFileHandler
-import eu.bunburya.apogee.handlers.RequestDecoder
-import eu.bunburya.apogee.handlers.ResponseEncoder
+import eu.bunburya.apogee.handlers.*
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInitializer
@@ -55,6 +52,8 @@ private class GeminiChannelInitializer(private val config: Config): ChannelIniti
             RequestDecoder(),
         )
         if (config.CLIENT_CERT_ZONES.isNotEmpty()) pipeline.addLast(ClientAuthHandler(config))
+        if (config.TEMP_REDIRECTS.isNotEmpty() or config.PERM_REDIRECTS.isNotEmpty())
+            pipeline.addLast(RedirectHandler(config.TEMP_REDIRECTS, config.PERM_REDIRECTS))
         pipeline.addLast(StaticFileHandler(config))
         logger.fine("All handlers added; channel initialised.")
     }
