@@ -3,6 +3,7 @@ package eu.bunburya.apogee.handlers
 import eu.bunburya.apogee.*
 import eu.bunburya.apogee.models.*
 import eu.bunburya.apogee.static.FileServer
+import eu.bunburya.apogee.utils.compileKeys
 import eu.bunburya.apogee.utils.writeResponse
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
@@ -31,7 +32,7 @@ class StaticFileHandler(private val config: Config): ChannelInboundHandlerAdapte
     /**
      * The main handler function which acts as a gateway to our business logic.
      */
-    fun processRequest(request: Request): Response {
+    private fun processRequest(request: Request): Response {
 
         val validity = request.validity
         if (! validity.isValid) return BadRequestResponse(request, validity.defaultMsg)

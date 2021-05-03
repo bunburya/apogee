@@ -18,6 +18,14 @@ internal class GeminiServerTest {
 
     private val client = TestClient()
 
+    private val mimeTypes = mapOf(
+        "atom.xml" to "application/atom+xml",
+        "gemtext_file.gmi" to "text/gemini",
+        "jpg_file.jpg" to "image/jpeg",
+        "text_file.txt" to "text/plain",
+        "xml_file.xml" to "application/xml"
+    )
+
     private fun addCRLF(bytes: ByteArray) {
         val end = bytes.lastIndex
         bytes[end] = LF
@@ -173,6 +181,15 @@ internal class GeminiServerTest {
             }
             client.testRequest(request4, certFile, keyFile) {
                 assertEquals(51, it.statusCode)
+            }
+        }
+    }
+
+    @Test
+    fun `test MIME type recognition`() {
+        for ((fileName, mimeType) in mimeTypes) {
+            client.testRequest(URL_BASE + "mime_tests/$fileName\r\n") {
+                assertEquals(mimeType, it.meta)
             }
         }
     }
