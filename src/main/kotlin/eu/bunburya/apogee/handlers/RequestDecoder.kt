@@ -2,6 +2,7 @@ package eu.bunburya.apogee.handlers
 
 import eu.bunburya.apogee.models.BadRequestResponse
 import eu.bunburya.apogee.models.Request
+import eu.bunburya.apogee.utils.toByteBuf
 import eu.bunburya.apogee.utils.writeResponse
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
@@ -24,7 +25,7 @@ class RequestDecoder: DelimiterBasedFrameDecoder(
     1026, // 1024 (max URL length per spec) + "\r\n"
     true,
     true,
-    *Delimiters.lineDelimiter()
+    "\r\n".toByteBuf()
 ) {
 
     private val logger = Logger.getLogger(javaClass.name)

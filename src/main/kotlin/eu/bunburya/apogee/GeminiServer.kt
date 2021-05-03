@@ -22,6 +22,7 @@ private class GeminiChannelInitializer(private val config: Config): ChannelIniti
 
     // Build SSL context
     private val sslCtx = SslContextBuilder.forServer(File(config.CERT_FILE), File(config.KEY_FILE))
+        .protocols("TLSv1.3", "TLSv1.2")
         .trustManager(object: X509TrustManager {
             // "Dummy" trust manager to accept all client certs (including self-signed certs).
             // We can then decide what to do with the certs (ie, accept or reject) later on.
