@@ -23,7 +23,8 @@ internal class GeminiServerTest {
         "gemtext_file.gmi" to "text/gemini",
         "jpg_file.jpg" to "image/jpeg",
         "text_file.txt" to "text/plain",
-        "xml_file.xml" to "application/xml"
+        "xml_file.xml" to "application/xml",
+        "rss.xml" to "application/rss+xml"
     )
 
     private fun addCRLF(bytes: ByteArray) {
