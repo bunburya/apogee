@@ -18,6 +18,7 @@ internal class PathStringUtilsKtTest {
     private val expectedInResults = listOf(
         Triple("/home/test/test.txt", "/home", true),
         Triple("/home/test/test.txt", "/home/", true),
+        Triple("/home/test/test.xtx", "/home/tes", false),
         Triple("/home/test/test.txt", "/", true),
         Triple("/home/test/test.txt", "/home/test2", false),
         Triple("/home/test/..", "/home/test", false)

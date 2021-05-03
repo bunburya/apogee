@@ -52,6 +52,7 @@ private class GeminiChannelInitializer(private val config: Config): ChannelIniti
             RequestDecoder(),
         )
         if (config.CLIENT_CERT_ZONES.isNotEmpty()) pipeline.addLast(ClientAuthHandler(config))
+        if (config.CGI_PATHS.isNotEmpty()) pipeline.addLast(CGIHandler(config))
         if (config.TEMP_REDIRECTS.isNotEmpty() or config.PERM_REDIRECTS.isNotEmpty())
             pipeline.addLast(RedirectHandler(config.TEMP_REDIRECTS, config.PERM_REDIRECTS))
         pipeline.addLast(StaticFileHandler(config))
@@ -68,7 +69,7 @@ class GeminiServer(private val config: Config) {
     fun run() {
         logger.info("Initialising server.")
         val bossGroup = NioEventLoopGroup()
-        val workerGroup = NioEventLoopGroup()
+        val workerGroup = NioEventLoopGroup(1024)
         try {
             val bootstrap = ServerBootstrap().apply {
                 group(bossGroup, workerGroup)

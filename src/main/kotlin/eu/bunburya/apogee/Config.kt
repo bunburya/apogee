@@ -2,6 +2,8 @@ package eu.bunburya.apogee
 
 import com.moandjiezana.toml.Toml
 import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStream
 import kotlin.jvm.Throws
 
 class ConfigError(msg: String): Exception(msg)
@@ -104,4 +106,8 @@ data class Config (
             )
         }
     }
+
+    val errorLogOutputStream: OutputStream get() =
+        if (LOG_FILE != null) FileOutputStream(File(LOG_FILE)) else System.out
+
 }

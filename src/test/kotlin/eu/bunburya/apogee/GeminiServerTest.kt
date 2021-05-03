@@ -195,5 +195,24 @@ internal class GeminiServerTest {
         }
     }
 
+    @Test
+    fun `test basic CGI script`() {
+        client.testRequest(URL_BASE + "cgi-bin/sh_print_env\r\n") {
+            assertEquals(20, it.statusCode)
+            assertEquals("text/plain", it.meta)
+        }
+        client.testRequest(URL_BASE + "cgi-bin/sh_sleep_5\r\n") {
+            assertEquals(20, it.statusCode)
+            assertEquals("text/plain", it.meta)
+        }
+    }
+
+    @Test
+    fun `test CGI script with timeout`() {
+        client.testRequest(URL_BASE + "cgi-bin/sh_sleep_15\r\n") {
+            assertEquals(42, it.statusCode)
+        }
+    }
+
 
 }

@@ -22,7 +22,7 @@ val UTF_8_CRLF = byteArrayOf(13, 10)
  * @param request The Request object representing the inbound request that triggered the response.
  * @param body The body of the response.
  */
-abstract class Response(
+open class Response(
     val statusCode: Int,
     val meta: String?,
     val request: Request,

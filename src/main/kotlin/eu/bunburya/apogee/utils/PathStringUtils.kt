@@ -1,7 +1,6 @@
 package eu.bunburya.apogee.utils
 
 import eu.bunburya.apogee.Config
-import eu.bunburya.apogee.models.BadRequestResponse
 import eu.bunburya.apogee.models.Request
 import java.io.File
 import java.nio.file.Path
@@ -51,7 +50,7 @@ fun fileIsInDirectory(filePath: String, dirPath: String): Boolean {
  */
 fun getFilePath(request: Request, config: Config): Path {
     require(request.uri != null)
-    return Paths.get(config.DOCUMENT_ROOT, request.uri!!.path.replace('/', File.separatorChar))
+    return Paths.get(config.DOCUMENT_ROOT, request.uri.path.replace('/', File.separatorChar))
         .toAbsolutePath()
 }
 
