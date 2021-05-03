@@ -104,24 +104,24 @@ class ClientAuthHandler(private val config: Config): ChannelInboundHandlerAdapte
         // Iterate through the pattern-hash combinations specified in the config
         for ((pattern, allowedHashes) in patterns) {
             // Check if the current pattern matches the request
-            logger.fine("Testing request ${request.uri!!.path} against pattern $pattern")
+            //logger.fine("Testing request ${request.uri!!.path} against pattern $pattern")
             if (pattern.matcher(request.uri!!.path).find()) {
-                logger.fine("Matched pattern.")
+                //logger.fine("Matched pattern.")
                 matchedPatterns++
                 if (clientCert == null) return ClientCertStatus.NO_CERT
                 val certHash = getCertHashString(clientCert)
-                logger.fine("Found cert with hash $certHash.")
+                //logger.fine("Found cert with hash $certHash.")
                 // Check if the certificate's hash matches the specified one
                 for (hash in allowedHashes) {
-                    logger.fine("Checking client hash $certHash against allowed hash $hash")
+                    //logger.fine("Checking client hash $certHash against allowed hash $hash")
                     if (certHash == hash) {
-                        logger.fine("Cert matched.")
+                        //logger.fine("Cert matched.")
                         matchingCerts++
                         if (certIsValid(clientCert)) validMatchingCerts++
                         break
-                    } else logger.fine("No match.")
+                    } //else logger.fine("No match.")
                 }
-            } else logger.fine("Not matched.")
+            } //else logger.fine("Not matched.")
         }
 
         // We should not have more authenticated patterns than matched patterns, or more matching certs than valid
