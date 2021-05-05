@@ -4,21 +4,56 @@ import eu.bunburya.apogee.Config
 import eu.bunburya.apogee.models.CGIErrorResponse
 import eu.bunburya.apogee.models.Request
 import eu.bunburya.apogee.models.Response
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import eu.bunburya.apogee.utils.resolvePath
+import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
-class CGIServer(private val config: Config) {
+class CGIServer(private val config: Config): GatewayManager(config) {
 
     private val logger = Logger.getLogger(javaClass.name)
 
-    fun launchProcess(filePath: String, request: Request): Response {
-        logger.fine("Launching script at $filePath")
+    private fun makeEnv(processBuilder: ProcessBuilder, request: Request, scriptPath: String, pathInfo: String) {
+        val env = prepareGatewayEnv(request, processBuilder, scriptPath, pathInfo)
+        env["GATEWAY_INTERFACE"] = "CGI/1.1"
+
+    }
+
+    /**
+     * From a request, return a pair, the first element of which is a path to the CGI script and the second element of
+     * which is the rest of the request path.
+     *
+     * If the request does not correspond to any CGI script, return null.
+     */
+    fun getCGIScript(request: Request): Pair<String, String>? {
+        var fullCgiScriptPath : String
+        var relativeCgiDirPath: String
+        val uriPathString = request.uri!!.path
+        val fullPath = resolvePath(request, config)
+        var components: List<String>
+        for (fullCgiDirPath in config.CGI_PATHS) {
+            // TODO: Consider whether we can tidy this up.
+            if (! fullPath.startsWith(fullCgiDirPath)) continue
+            relativeCgiDirPath = "/" + fullCgiDirPath.removePrefix(config.DOCUMENT_ROOT)
+            fullCgiScriptPath = fullCgiDirPath.removeSuffix("/")
+            components = uriPathString.removePrefix(relativeCgiDirPath).split("/").filter { it.isNotBlank() }
+            for (component in components) {
+                fullCgiScriptPath = "$fullCgiScriptPath/$component"
+                val file = File(fullCgiScriptPath)
+                if (file.isFile && file.canExecute()) {
+                    val pathInfo = uriPathString.toString().removePrefix(fullCgiScriptPath)
+                    return Pair(fullCgiScriptPath, pathInfo)
+                }
+            }
+        }
+        return null
+    }
+
+    fun launchProcess(scriptPath: String, pathInfo: String, request: Request): Response {
+        logger.fine("Launching script at $scriptPath")
         var logged = false
-        val pb = ProcessBuilder(filePath)
-        val env = pb.environment()
-        env["TEST_ENV"] = "test_val"
+        val pb = ProcessBuilder(scriptPath)
+        makeEnv(pb, request, scriptPath, pathInfo)
         try {
             val proc = pb.start()
             val completed = proc.waitFor(10, TimeUnit.SECONDS)
@@ -66,7 +101,6 @@ class CGIServer(private val config: Config) {
         } catch (e: Exception) {
             if (!logged) {
                 logger.warning("Encountered errors in CGI request: ${request.uri!!.toASCIIString()}")
-                logged = true
             }
             logger.severe("Got exception when calling script: ${e.message}")
             return CGIErrorResponse(request)

@@ -2,6 +2,7 @@ package eu.bunburya.apogee.handlers
 
 import eu.bunburya.apogee.Config
 import eu.bunburya.apogee.dynamic.CGIServer
+import eu.bunburya.apogee.models.CGIErrorResponse
 import eu.bunburya.apogee.models.Request
 import eu.bunburya.apogee.utils.fileIsInDirectory
 import eu.bunburya.apogee.utils.getFilePath
@@ -24,15 +25,12 @@ class CGIHandler(private val config: Config): ChannelInboundHandlerAdapter() {
     override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
         logger.fine("CGIHandler reached.")
         val request = msg as Request
-        val scriptPath = resolvePath(request, config)
-        for (dir in config.CGI_PATHS) {
-            logger.fine("Checking if path $dir contains $scriptPath")
-            if (fileIsInDirectory(scriptPath, Paths.get(dir))) {
-                logger.fine("Path is in CGI directory: $dir")
-                return writeResponse(ctx, cgiServer.launchProcess(scriptPath.toString(), request))
-            } else logger.fine("Not in directory.")
-        }
-        ctx.fireChannelRead(msg)
+        // If we can't find a CGI script, return a CGI error (note: this is different to how Molly Brown does it, which
+        // is to let the file be handled as a static file).
+        val (scriptPath, pathInfo) = cgiServer.getCGIScript(request)
+            ?: return writeResponse(ctx, CGIErrorResponse(request))
+        return writeResponse(ctx, cgiServer.launchProcess(scriptPath, pathInfo, request))
+
     }
 
 }

@@ -1,5 +1,6 @@
 package eu.bunburya.apogee.models
 
+import java.net.InetSocketAddress
 import java.net.SocketAddress
 import java.net.URI
 import java.net.URISyntaxException
@@ -30,7 +31,7 @@ enum class RequestValidity(val isValid: Boolean, val defaultMsg: String) {
  */
 class Request (
     val content: String,
-    val ipAddr: SocketAddress,
+    val ipAddr: InetSocketAddress,
     val clientCerts: List<Certificate>
 ) {
     /**
@@ -46,7 +47,7 @@ class Request (
     /**
      * The IP address from which the request originated, as a String.
      */
-    val ipString = ipAddr.toString()
+    val ipString: String = ipAddr.hostString
 
     /**
      * Perform some basic checks to determine if a request looks like a valid Gemini request.

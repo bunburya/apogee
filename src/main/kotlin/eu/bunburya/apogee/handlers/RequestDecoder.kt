@@ -10,6 +10,7 @@ import io.netty.handler.codec.DelimiterBasedFrameDecoder
 import io.netty.handler.codec.Delimiters
 import io.netty.handler.ssl.SslHandler
 import io.netty.util.CharsetUtil
+import java.net.InetSocketAddress
 import java.util.logging.Logger
 import javax.net.ssl.SSLPeerUnverifiedException
 import java.security.cert.Certificate
@@ -45,7 +46,7 @@ class RequestDecoder: DelimiterBasedFrameDecoder(
 
         val request = Request(
             byteBuf.toString(CharsetUtil.UTF_8),
-            ctx.channel().remoteAddress(),
+            ctx.channel().remoteAddress() as InetSocketAddress,
             clientCerts
         )
 
