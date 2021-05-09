@@ -2,6 +2,7 @@ package eu.bunburya.apogee.handlers
 
 import eu.bunburya.apogee.models.BadRequestResponse
 import eu.bunburya.apogee.models.Request
+import eu.bunburya.apogee.utils.toByteArray
 import eu.bunburya.apogee.utils.toByteBuf
 import eu.bunburya.apogee.utils.writeResponse
 import io.netty.buffer.ByteBuf
@@ -44,18 +45,16 @@ class RequestDecoder: DelimiterBasedFrameDecoder(
         }
         val byteBuf = super.decode(ctx, buffer) as ByteBuf? ?: return null
 
-        val request = Request(
+        /*println("Bytes:")
+        for (b in byteBuf.toByteArray()) {
+            println(b)
+        }*/
+
+        return Request(
             byteBuf.toString(CharsetUtil.UTF_8),
             ctx.channel().remoteAddress() as InetSocketAddress,
             clientCerts
         )
-
-        if (request.isValid) return request
-        else {
-            writeResponse(ctx, BadRequestResponse(request))
-            return null
-        }
-
     }
 
 }

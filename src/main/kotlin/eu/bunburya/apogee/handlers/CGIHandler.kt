@@ -25,12 +25,12 @@ class CGIHandler(private val config: Config): ChannelInboundHandlerAdapter() {
     override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
         logger.fine("CGIHandler reached.")
         val request = msg as Request
-        // If we can't find a CGI script, return a CGI error (note: this is different to how Molly Brown does it, which
-        // is to let the file be handled as a static file).
-        val (scriptPath, pathInfo) = cgiServer.getCGIScript(request)
-            ?: return writeResponse(ctx, CGIErrorResponse(request))
-        return writeResponse(ctx, cgiServer.launchProcess(scriptPath, pathInfo, request))
-
+        val pathPair = cgiServer.getCGIScript(request)
+        if (pathPair == null) ctx.fireChannelRead(msg)
+        else {
+            val (scriptPath, pathInfo) = pathPair
+            return writeResponse(ctx, cgiServer.launchProcess(scriptPath, pathInfo, request))
+        }
     }
 
 }

@@ -187,6 +187,32 @@ internal class GeminiServerTest {
     }
 
     @Test
+    fun `test client auth where multiple certs accepted`() {
+        val url = URL_BASE + "auth_zone_0_2_4/subdir/test_file.txt\r\n"
+
+        // No cert
+        client.testRequest(url) {
+            assertEquals(60, it.statusCode)
+        }
+
+        // Right cert
+        for (i in arrayOf(0, 2, 4)) {
+            val (rightCertFile, rightKeyFile) = getRightCredentials(i)
+            client.testRequest(url, rightCertFile, rightKeyFile) {
+                assertEquals(20, it.statusCode)
+            }
+        }
+
+        // Wrong cert
+        for (i in arrayOf(1, 3)) {
+            val (wrongCertFile, wrongKeyFile) = getRightCredentials(i)
+            client.testRequest(url, wrongCertFile, wrongKeyFile) {
+                assertEquals(61, it.statusCode)
+            }
+        }
+    }
+
+    @Test
     fun `test MIME type recognition`() {
         for ((fileName, mimeType) in mimeTypes) {
             client.testRequest(URL_BASE + "mime_tests/$fileName\r\n") {

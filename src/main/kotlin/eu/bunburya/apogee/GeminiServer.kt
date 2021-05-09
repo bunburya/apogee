@@ -51,6 +51,7 @@ private class GeminiChannelInitializer(private val config: Config): ChannelIniti
             // Outbound handlers go first so inbound handlers can send Response directly back to clients if necessary
             ResponseEncoder(getAccessLogger(config)),
             RequestDecoder(),
+            RequestValidator(config)
         )
         if (config.CLIENT_CERT_ZONES.isNotEmpty()) pipeline.addLast(ClientAuthHandler(config))
         if (config.CGI_PATHS.isNotEmpty()) pipeline.addLast(CGIHandler(config))
