@@ -26,8 +26,7 @@ private class GeminiChannelInitializer(private val config: Config): ChannelIniti
         .trustManager(object: X509TrustManager {
             // "Dummy" trust manager to accept all client certs (including self-signed certs).
             // We can then decide what to do with the certs (ie, accept or reject) later on.
-            // TODO: Consider whether this is safe enough, or whether we should try to add these clients to a
-            // trust store.
+            // TODO: Consider whether this is safe enough, or whether we should add these certs to a TrustStore.
             override fun getAcceptedIssuers(): Array<X509Certificate>? = arrayOf<X509Certificate>()
             override fun checkClientTrusted(p0: Array<out X509Certificate>?, p1: String?) {}
             override fun checkServerTrusted(p0: Array<out X509Certificate>?, p1: String?) {}
@@ -55,6 +54,7 @@ private class GeminiChannelInitializer(private val config: Config): ChannelIniti
         )
         if (config.CLIENT_CERT_ZONES.isNotEmpty()) pipeline.addLast(ClientAuthHandler(config))
         if (config.CGI_PATHS.isNotEmpty()) pipeline.addLast(CGIHandler(config))
+        if (config.SCGI_PATHS.isNotEmpty()) pipeline.addLast(SCGIHandler(config))
         if (config.TEMP_REDIRECTS.isNotEmpty() or config.PERM_REDIRECTS.isNotEmpty())
             pipeline.addLast(RedirectHandler(config.TEMP_REDIRECTS, config.PERM_REDIRECTS))
         pipeline.addLast(StaticFileHandler(config))

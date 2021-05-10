@@ -3,7 +3,7 @@ package eu.bunburya.apogee.handlers
 import eu.bunburya.apogee.Config
 import eu.bunburya.apogee.models.*
 import eu.bunburya.apogee.utils.compileKeys
-import eu.bunburya.apogee.utils.writeResponse
+import eu.bunburya.apogee.utils.writeAndClose
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import java.security.MessageDigest
@@ -12,7 +12,6 @@ import java.security.cert.CertificateExpiredException
 import java.security.cert.CertificateNotYetValidException
 import java.security.cert.X509Certificate
 import java.util.logging.Logger
-import java.util.regex.Pattern
 
 /**
  * Constants representing the possible results of checking whether the client has sent the required certificates for a
@@ -149,15 +148,16 @@ class ClientAuthHandler(private val config: Config): ChannelInboundHandlerAdapte
         when (requestIsAllowed(request)) {
             ClientCertStatus.NO_CERT_NEEDED -> ctx.fireChannelRead(msg)
             ClientCertStatus.MATCHING_CERT -> ctx.fireChannelRead(msg)
-            ClientCertStatus.NO_CERT -> writeResponse(ctx, ClientCertNeededResponse(request))
-            ClientCertStatus.NO_MATCHING_CERT -> writeResponse(ctx, ClientCertNotAuthorizedResponse(request))
-            ClientCertStatus.MATCHING_CERT_INVALID -> writeResponse(ctx, ClientCertNotValidResponse(request))
-            ClientCertStatus.OTHER -> writeResponse(ctx,
+            ClientCertStatus.NO_CERT -> ctx.writeAndClose(ClientCertNeededResponse(request), logger)
+            ClientCertStatus.NO_MATCHING_CERT -> ctx.writeAndClose(ClientCertNotAuthorizedResponse(request), logger)
+            ClientCertStatus.MATCHING_CERT_INVALID -> ctx.writeAndClose(ClientCertNotValidResponse(request), logger)
+            ClientCertStatus.OTHER -> ctx.writeAndClose(
                 TemporaryFailureResponse(
                     request,
                     "Unspecified error when authenticating client certificates. " +
                             "This has been logged on the server side."
                 ),
+                logger
             )
         }
 

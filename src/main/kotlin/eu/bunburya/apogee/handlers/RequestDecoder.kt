@@ -1,14 +1,10 @@
 package eu.bunburya.apogee.handlers
 
-import eu.bunburya.apogee.models.BadRequestResponse
 import eu.bunburya.apogee.models.Request
-import eu.bunburya.apogee.utils.toByteArray
 import eu.bunburya.apogee.utils.toByteBuf
-import eu.bunburya.apogee.utils.writeResponse
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.DelimiterBasedFrameDecoder
-import io.netty.handler.codec.Delimiters
 import io.netty.handler.ssl.SslHandler
 import io.netty.util.CharsetUtil
 import java.net.InetSocketAddress

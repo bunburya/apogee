@@ -3,8 +3,7 @@ package eu.bunburya.apogee.handlers
 import eu.bunburya.apogee.*
 import eu.bunburya.apogee.models.*
 import eu.bunburya.apogee.static.FileServer
-import eu.bunburya.apogee.utils.compileKeys
-import eu.bunburya.apogee.utils.writeResponse
+import eu.bunburya.apogee.utils.writeAndClose
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import java.util.logging.Logger
@@ -48,7 +47,7 @@ class StaticFileHandler(private val config: Config): ChannelInboundHandlerAdapte
         val request = msg as Request
         logger.fine("Got request ${request.content} from ${request.ipString}")
 
-        writeResponse(ctx, processRequest(request))
+        ctx.writeAndClose(processRequest(request), logger)
 
     }
 

@@ -5,27 +5,64 @@ import eu.bunburya.apogee.models.CGIErrorResponse
 import eu.bunburya.apogee.models.Request
 import eu.bunburya.apogee.models.Response
 import eu.bunburya.apogee.utils.resolvePath
+import eu.bunburya.apogee.utils.writeAndClose
 import java.io.File
+import java.io.Serializable
+import java.lang.IllegalArgumentException
 import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
-class CGIServer(private val config: Config): GatewayManager(config) {
 
-    private val logger = Logger.getLogger(javaClass.name)
+/**
+ * Base class for classes which help manage dynamic content using gateway protocols, eg CGI and SCGI.
+ */
+abstract class GatewayManager<requestType: BaseGatewayRequest>(protected val config: Config) {
 
-    private fun makeEnv(processBuilder: ProcessBuilder, request: Request, scriptPath: String, pathInfo: String) {
-        val env = prepareGatewayEnv(request, processBuilder, scriptPath, pathInfo)
-        env["GATEWAY_INTERFACE"] = "CGI/1.1"
-
+    protected fun prepareGatewayEnv(env: MutableMap<String, String>,
+                                    gatewayRequest: requestType): MutableMap<String, String> {
+        val request = gatewayRequest.request
+        env.clear()
+        env["QUERY_STRING"] = request.uri!!.rawQuery ?: ""
+        env["REQUEST_METHOD"] = ""
+        env["SERVER_NAME"] = config.HOSTNAME
+        env["SERVER_PORT"] = config.PORT.toString()
+        env["SERVER_PROTOCOL"] = "GEMINI"
+        env["SERVER_SOFTWARE"] = "APOGEE"
+        env["REMOTE_ADDR"] = request.ipString
+        env["SCRIPT_PATH"] = gatewayRequest.scriptPath
+        env["PATH_INFO"] = gatewayRequest.pathInfo
+        return env
     }
 
     /**
-     * From a request, return a pair, the first element of which is a path to the CGI script and the second element of
+     * From a request, return a Pair, the first element of which is a path to the script and the second element of
      * which is the rest of the request path.
      *
-     * If the request does not correspond to any CGI script, return null.
+     * If the request does not correspond to any script, return null.
      */
-    fun getCGIScript(request: Request): Pair<String, String>? {
+    abstract fun getPathInfo(request: Request): Serializable?
+
+    /**
+     * Handle a request for dynamic content and return an appropriate Response object.
+     */
+    abstract fun handleRequest(gatewayRequest: requestType)
+
+}
+
+/**
+ * Helper class for managing CGI requests.
+ */
+class CGIManager(config: Config): GatewayManager<CGIRequest>(config) {
+
+    private val logger = Logger.getLogger(javaClass.name)
+
+    private fun makeEnv(processBuilder: ProcessBuilder, cgiRequest: CGIRequest) {
+        val env = prepareGatewayEnv(processBuilder.environment(), cgiRequest)
+        env["GATEWAY_INTERFACE"] = "CGI/1.1"
+    }
+
+
+    override fun getPathInfo(request: Request): Pair<String, String>? {
         var fullCgiScriptPath : String
         var relativeCgiDirPath: String
         val uriPathString = request.uri!!.path
@@ -49,11 +86,15 @@ class CGIServer(private val config: Config): GatewayManager(config) {
         return null
     }
 
-    fun launchProcess(scriptPath: String, pathInfo: String, request: Request): Response {
+    override fun handleRequest(gatewayRequest: CGIRequest) {
+        val response: Response
+        val serverCtx = gatewayRequest.serverCtx
+        val scriptPath = gatewayRequest.scriptPath
+        val request = gatewayRequest.request
         logger.fine("Launching script at $scriptPath")
         var logged = false
         val pb = ProcessBuilder(scriptPath)
-        makeEnv(pb, request, scriptPath, pathInfo)
+        makeEnv(pb, gatewayRequest)
         try {
             val proc = pb.start()
             val completed = proc.waitFor(10, TimeUnit.SECONDS)
@@ -69,7 +110,7 @@ class CGIServer(private val config: Config): GatewayManager(config) {
                     logged = true
                 }
                 logger.severe("CGI script timed out.")
-                return CGIErrorResponse(request)
+                serverCtx.writeAndClose(CGIErrorResponse(request), logger)
             } else {
                 val exitCode = proc.exitValue()
                 if (exitCode != 0) {
@@ -78,7 +119,7 @@ class CGIServer(private val config: Config): GatewayManager(config) {
                         logged = true
                     }
                     logger.severe("CGI script returned with non-zero exit code $exitCode.")
-                    return CGIErrorResponse(request)
+                    serverCtx.writeAndClose(CGIErrorResponse(request), logger)
                 } else {
                     val output = proc.inputStream.readBytes()
                     val statusCode = output.slice(0..1).toByteArray().decodeToString().toInt()
@@ -90,11 +131,11 @@ class CGIServer(private val config: Config): GatewayManager(config) {
                             logged = true
                         }
                         logger.severe("CGI script output has no CRLF.")
-                        return CGIErrorResponse(request)
+                        serverCtx.writeAndClose(CGIErrorResponse(request), logger)
                     } else {
                         val mimeType = output.slice(3 until cr).toByteArray().decodeToString()
                         val body = output.slice(lf + 1..output.lastIndex).toByteArray()
-                        return Response(statusCode, mimeType, request, body)
+                        serverCtx.writeAndClose(Response(statusCode, mimeType, request, body), logger)
                     }
                 }
             }
@@ -103,7 +144,44 @@ class CGIServer(private val config: Config): GatewayManager(config) {
                 logger.warning("Encountered errors in CGI request: ${request.uri!!.toASCIIString()}")
             }
             logger.severe("Got exception when calling script: ${e.message}")
-            return CGIErrorResponse(request)
+            serverCtx.writeAndClose(CGIErrorResponse(request), logger)
         }
+    }
+}
+
+/**
+ * Helper class for managing SCGI requests.
+ */
+class SCGIManager(config: Config): GatewayManager<SCGIRequest>(config) {
+
+    private val scgiClients = mutableMapOf<String, SCGIClient>().apply {
+        for ((prefix, socketPath) in config.SCGI_PATHS) {
+            this[prefix] = SCGIClient(File(socketPath))
+        }
+    }.toMap()
+
+    /**
+     * Assign a map of environment variables to a SCGIRequest object (in-place).
+     */
+    fun makeEnv(scgiRequest: SCGIRequest) {
+        scgiRequest.env = prepareGatewayEnv(mutableMapOf(), scgiRequest)
+    }
+
+
+    override fun getPathInfo(request: Request): Pair<String, String>? {
+        val requestPath = request.uri!!.path
+        for ((prefix, _) in config.SCGI_PATHS) {
+            if (requestPath.startsWith(prefix)) {
+                return Pair(prefix, requestPath.removePrefix(prefix))
+            }
+        }
+        return null
+    }
+
+    override fun handleRequest(gatewayRequest: SCGIRequest) {
+        makeEnv(gatewayRequest)
+        val client = scgiClients[gatewayRequest.scriptPath]
+            ?: throw IllegalArgumentException("No SCGI client corresponding to path: ${gatewayRequest.scriptPath}")
+        client.write(gatewayRequest)
     }
 }

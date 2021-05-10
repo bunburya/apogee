@@ -8,6 +8,8 @@ import java.util.logging.Logger
 const val UTF_8_SPACE = 32
 val UTF_8_CRLF = byteArrayOf(13, 10)
 
+class ResponseParseError(msg: String): Exception(msg)
+
 /**
  * This file contains classes corresponding to specific Gemini responses. The RequestHandler class should send responses
  * as relevant Response subclasses, and ResponseEncoder should encode Response objects to ByteBuf objects for sending
@@ -28,6 +30,22 @@ open class Response(
     val request: Request,
     val body: ByteArray? = null
 ) {
+    companion object {
+        @Throws(ResponseParseError::class)
+        fun fromBytes(bytes: ByteArray, request: Request): Response {
+            val statusCode = bytes.slice(0..1).toByteArray().decodeToString().toInt()
+            val cr = bytes.indexOf('\r'.toByte())
+            val lf = bytes.indexOf('\n'.toByte())
+            if ((cr == -1) || (lf == -1) || (lf != cr + 1)) {
+                throw ResponseParseError("CGI script output has no CRLF.")
+            } else {
+                val meta = bytes.slice(3 until cr).toByteArray().decodeToString()
+                val body = bytes.slice(lf + 1..bytes.lastIndex).toByteArray()
+                return Response(statusCode, meta, request, body)
+            }
+        }
+    }
+
     private val logger = Logger.getLogger(javaClass.name)
 
     /**
