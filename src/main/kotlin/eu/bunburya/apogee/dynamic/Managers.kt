@@ -87,7 +87,6 @@ class CGIManager(config: Config): GatewayManager<CGIRequest>(config) {
     }
 
     override fun handleRequest(gatewayRequest: CGIRequest) {
-        val response: Response
         val serverCtx = gatewayRequest.serverCtx
         val scriptPath = gatewayRequest.scriptPath
         val request = gatewayRequest.request
@@ -164,7 +163,10 @@ class SCGIManager(config: Config): GatewayManager<SCGIRequest>(config) {
      * Assign a map of environment variables to a SCGIRequest object (in-place).
      */
     fun makeEnv(scgiRequest: SCGIRequest) {
-        scgiRequest.env = prepareGatewayEnv(mutableMapOf(), scgiRequest)
+        val env = prepareGatewayEnv(mutableMapOf(), scgiRequest)
+        // Don't add CONTENT_LENGTH, as we write this separately when encoding the request
+        env["SCGI"] = "1"
+        scgiRequest.env = env
     }
 
 

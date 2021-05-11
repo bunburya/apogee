@@ -29,6 +29,7 @@ private class LogAndCloseListener(private val invoker: ChannelOutboundInvoker,
                                   private val relevantFuture: ChannelFuture,
                                   private val logger: Logger): ChannelFutureListener {
     override fun operationComplete(future: ChannelFuture) {
+        logger.fine("writeAndFlush complete.")
         if (future == relevantFuture) {
             if (!future.isSuccess) logger.severe("Error writing to channel: ${future.cause().message}.")
             invoker.close()
@@ -42,6 +43,5 @@ private class LogAndCloseListener(private val invoker: ChannelOutboundInvoker,
  */
 fun ChannelOutboundInvoker.writeAndClose(msg: Any, logger: Logger) {
     val writtenFuture = this.writeAndFlush(msg)
-    val invoker = this
     writtenFuture.addListener(LogAndCloseListener(this, writtenFuture, logger))
 }
