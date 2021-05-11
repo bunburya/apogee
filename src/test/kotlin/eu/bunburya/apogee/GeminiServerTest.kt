@@ -1,5 +1,6 @@
 package eu.bunburya.apogee
 
+import io.netty.util.TimerTask
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -237,6 +238,67 @@ internal class GeminiServerTest {
     fun `test CGI script with timeout`() {
         client.testRequest(URL_BASE + "cgi-bin/sh_sleep_15\r\n") {
             assertEquals(42, it.statusCode)
+        }
+    }
+
+    @Test
+    fun `test SCGI`() {
+        client.testRequest(URL_BASE + "scgi-path-1\r\n") {
+            assertEquals(20, it.statusCode)
+            assertEquals("text/plain", it.meta)
+            assert(it.body.isNotEmpty())
+        }
+        client.testRequest(URL_BASE + "scgi-path-1/test_redirect\r\n") {
+            assertEquals(31, it.statusCode)
+            assertEquals("/redirect/to", it.meta)
+            assert(it.body.isEmpty())
+        }
+        client.testRequest(URL_BASE + "scgi-path-1/test_cgi_error\r\n") {
+            assertEquals(42, it.statusCode)
+            assertEquals("Testing SCGI error", it.meta)
+            assert(it.body.isEmpty())
+        }
+        client.testRequest(URL_BASE + "scgi-path-1/test_need_cert\r\n") {
+            assertEquals(60, it.statusCode)
+            assert(it.body.isEmpty())
+        }
+        client.testRequest(URL_BASE + "scgi-path-1/test_bad_cert\r\n") {
+            assertEquals(61, it.statusCode)
+            assert(it.body.isEmpty())
+        }
+        client.testRequest(URL_BASE + "scgi-path-1/test_server_error\r\n") {
+            assertEquals(51, it.statusCode)
+            assertEquals("SCGI says error", it.meta)
+            assert(it.body.isEmpty())
+        }
+        client.testRequest(URL_BASE + "scgi-path-1/test_actual_scgi_error_1\r\n") {
+            assertEquals(42, it.statusCode)
+            assertNotEquals("SCGI says error", it.meta)
+            assert(it.body.isEmpty())
+        }
+        client.testRequest(URL_BASE + "scgi-path-1/test_actual_scgi_error_2\r\n") {
+            assertEquals(42, it.statusCode)
+            assertNotEquals("SCGI says error", it.meta)
+            assert(it.body.isEmpty())
+        }
+        // FIXME: This hangs rather than timing out. One way to fix this would be to use a HashedWheelTimer to manually
+        // create a timeout.
+        client.testRequest(URL_BASE + "scgi-path-1/test_actual_scgi_error_3\r\n") {
+            assertEquals(42, it.statusCode)
+            assertNotEquals("SCGI says error", it.meta)
+            assert(it.body.isEmpty())
+        }
+        client.testRequest(URL_BASE + "scgi-path-1/test_sleep_5\r\n") {
+            assertEquals(20, it.statusCode)
+            assertEquals("slept 5\n", it.body.decodeToString())
+        }
+        client.testRequest(URL_BASE + "scgi-path-1/test_sleep_15\r\n") {
+            assertEquals(42, it.statusCode)
+            assertNotEquals("SCGI says error", it.meta)
+        }
+        client.testRequest(URL_BASE + "scgi-path-1/some_other_path\r\n") {
+            assertEquals(20, it.statusCode)
+            assertEquals("some other path received\n", it.body.decodeToString())
         }
     }
 

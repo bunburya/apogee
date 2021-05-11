@@ -4,6 +4,7 @@ import eu.bunburya.apogee.Config
 import eu.bunburya.apogee.models.CGIErrorResponse
 import eu.bunburya.apogee.models.Request
 import eu.bunburya.apogee.models.Response
+import eu.bunburya.apogee.models.ResponseParseError
 import eu.bunburya.apogee.utils.resolvePath
 import eu.bunburya.apogee.utils.writeAndClose
 import java.io.File
@@ -20,6 +21,7 @@ abstract class GatewayManager<requestType: BaseGatewayRequest>(protected val con
 
     protected fun prepareGatewayEnv(env: MutableMap<String, String>,
                                     gatewayRequest: requestType): MutableMap<String, String> {
+        // TODO: Add client certificate variables
         val request = gatewayRequest.request
         env.clear()
         env["QUERY_STRING"] = request.uri!!.rawQuery ?: ""
@@ -121,20 +123,16 @@ class CGIManager(config: Config): GatewayManager<CGIRequest>(config) {
                     serverCtx.writeAndClose(CGIErrorResponse(request), logger)
                 } else {
                     val output = proc.inputStream.readBytes()
-                    val statusCode = output.slice(0..1).toByteArray().decodeToString().toInt()
-                    val cr = output.indexOf('\r'.toByte())
-                    val lf = output.indexOf('\n'.toByte())
-                    if ((cr == -1) || (lf == -1) || (lf != cr + 1)) {
+                    try {
+                        val response = Response.fromBytes(output, request)
+                        serverCtx.writeAndClose(response, logger)
+                    } catch (e: ResponseParseError) {
                         if (!logged) {
                             logger.warning("Encountered errors in CGI request: ${request.uri!!.toASCIIString()}")
                             logged = true
                         }
-                        logger.severe("CGI script output has no CRLF.")
+                        logger.severe(e.message)
                         serverCtx.writeAndClose(CGIErrorResponse(request), logger)
-                    } else {
-                        val mimeType = output.slice(3 until cr).toByteArray().decodeToString()
-                        val body = output.slice(lf + 1..output.lastIndex).toByteArray()
-                        serverCtx.writeAndClose(Response(statusCode, mimeType, request, body), logger)
                     }
                 }
             }
@@ -155,7 +153,7 @@ class SCGIManager(config: Config): GatewayManager<SCGIRequest>(config) {
 
     private val scgiClients = mutableMapOf<String, SCGIClient>().apply {
         for ((prefix, socketPath) in config.SCGI_PATHS) {
-            this[prefix] = SCGIClient(File(socketPath))
+            this[prefix] = SCGIClient(config, File(socketPath))
         }
     }.toMap()
 

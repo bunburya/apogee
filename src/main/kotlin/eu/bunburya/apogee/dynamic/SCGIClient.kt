@@ -1,8 +1,10 @@
 package eu.bunburya.apogee.dynamic
 
 import eu.bunburya.apogee.Config
+import eu.bunburya.apogee.models.CGIErrorResponse
 import eu.bunburya.apogee.models.Request
 import eu.bunburya.apogee.models.Response
+import eu.bunburya.apogee.models.ResponseParseError
 import eu.bunburya.apogee.utils.toByteArray
 import eu.bunburya.apogee.utils.writeAndClose
 import io.netty.bootstrap.Bootstrap
@@ -10,12 +12,11 @@ import io.netty.buffer.ByteBuf
 import io.netty.channel.*
 import io.netty.channel.epoll.EpollDomainSocketChannel
 import io.netty.channel.epoll.EpollEventLoopGroup
-import io.netty.channel.nio.NioEventLoopGroup
-import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.channel.unix.DomainSocketAddress
-import io.netty.channel.unix.DomainSocketChannel
+import io.netty.channel.unix.UnixChannel
 import io.netty.handler.codec.MessageToByteEncoder
-import kotlinx.coroutines.*
+import io.netty.handler.timeout.ReadTimeoutException
+import io.netty.handler.timeout.ReadTimeoutHandler
 import java.io.File
 import java.util.logging.Logger
 
@@ -56,7 +57,6 @@ class SCGIRequestEncoder(): MessageToByteEncoder<SCGIRequest>() {
             bytes.add(0)
         }
         val netstring = toNetstring(bytes)
-        logger.fine("Writing: ${netstring.decodeToString()}")
         out.writeBytes(toNetstring(bytes))
     }
 }
@@ -72,7 +72,6 @@ class SCGIRequestContextHandler(): ChannelDuplexHandler() {
     private lateinit var serverCtx: ChannelHandlerContext
 
     override fun write(ctx: ChannelHandlerContext, msg: Any, promise: ChannelPromise) {
-        logger.fine("Write to SCGIRequestContextHandler")
         val scgiRequest = msg as SCGIRequest
         request = scgiRequest.request
         serverCtx = scgiRequest.serverCtx
@@ -80,24 +79,36 @@ class SCGIRequestContextHandler(): ChannelDuplexHandler() {
     }
 
     override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
-        logger.fine("Read from SCGIRequestContextHandler")
         val bytes = (msg as ByteBuf).toByteArray()
-        serverCtx.writeAndClose(Response.fromBytes(bytes, request), logger)
-    }
-}
-
-class SCGIChannelInitializer(): ChannelInitializer<DomainSocketChannel>() {
-    private val logger = Logger.getLogger(javaClass.name)
-    override fun initChannel(ch: DomainSocketChannel) {
-        logger.fine("Initialising SCGI channel")
-        val pipeline = ch.pipeline()
-        pipeline.addLast(SCGIRequestEncoder())
-        pipeline.addLast(SCGIRequestContextHandler())
-        logger.fine("All handlers added")
+        try {
+            val response = Response.fromBytes(bytes, request)
+            serverCtx.writeAndClose(response, logger)
+        } catch (e: ResponseParseError) {
+            logger.severe("Invalid response received from SCGI script: ${bytes.decodeToString()}.")
+            serverCtx.writeAndClose(CGIErrorResponse(request), logger)
+        }
     }
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
-        println("Exception: ${cause.message}")
+        if (cause is ReadTimeoutException)
+            logger.severe("SCGI script timed out.")
+        else logger.severe("Encountered error in communicating with SCGI script: ${cause.message}")
+        serverCtx.writeAndClose(CGIErrorResponse(request), logger)
+    }
+}
+
+class SCGIChannelInitializer(private val config: Config): ChannelInitializer<UnixChannel>() {
+    private val logger = Logger.getLogger(javaClass.name)
+    override fun initChannel(ch: UnixChannel) {
+        val pipeline = ch.pipeline()
+        pipeline.addLast(ReadTimeoutHandler(config.CGI_TIMEOUT))
+        pipeline.addLast(SCGIRequestEncoder())
+        pipeline.addLast(SCGIRequestContextHandler())
+    }
+
+    override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
+        logger.severe("Error initialising connection to SCGI app: ${cause.message}")
+        throw cause
     }
 }
 
@@ -109,7 +120,7 @@ class SCGIChannelInitializer(): ChannelInitializer<DomainSocketChannel>() {
  * SCGIHandler.
  */
 
-class SCGIClient(socket: File) {
+class SCGIClient(config: Config, socket: File) {
 
     private val logger = Logger.getLogger(javaClass.name)
     private val socketAddr = DomainSocketAddress(socket)
@@ -121,7 +132,7 @@ class SCGIClient(socket: File) {
             bootstrap = Bootstrap().apply {
                 group(workerGroup)
                 channel(EpollDomainSocketChannel::class.java)
-                handler(SCGIChannelInitializer())
+                handler(SCGIChannelInitializer(config))
             }
         } catch (e: Exception) {
             logger.severe("Error establishing connection with SCGI script: ${e.message}")
