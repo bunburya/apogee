@@ -6,11 +6,12 @@ import eu.bunburya.apogee.dynamic.SCGIRequest
 import eu.bunburya.apogee.models.CGIErrorResponse
 import eu.bunburya.apogee.models.Request
 import eu.bunburya.apogee.utils.writeAndClose
+import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import java.util.logging.Logger
 
-
+@ChannelHandler.Sharable
 class SCGIHandler(private val config: Config): ChannelInboundHandlerAdapter() {
 
     private val logger = Logger.getLogger(javaClass.name)

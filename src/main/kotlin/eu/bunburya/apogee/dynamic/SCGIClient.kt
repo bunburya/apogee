@@ -17,7 +17,11 @@ import io.netty.channel.unix.UnixChannel
 import io.netty.handler.codec.MessageToByteEncoder
 import io.netty.handler.timeout.ReadTimeoutException
 import io.netty.handler.timeout.ReadTimeoutHandler
+import io.netty.util.HashedWheelTimer
+import io.netty.util.Timeout
+import io.netty.util.Timer
 import java.io.File
+import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
 private fun MutableList<Byte>.addAll(bytes: ByteArray) {
@@ -65,20 +69,30 @@ class SCGIRequestEncoder(): MessageToByteEncoder<SCGIRequest>() {
  * Handle both requests to, and responses from, a SCGI script, storing the context associated with a request
  * and using that context to build a response that can be sent back to the client.
  */
-class SCGIRequestContextHandler(): ChannelDuplexHandler() {
+class SCGIRequestContextHandler(private val config: Config, private val timer: Timer): ChannelDuplexHandler() {
 
     private val logger = Logger.getLogger(javaClass.name)
     private lateinit var request: Request
     private lateinit var serverCtx: ChannelHandlerContext
+    private lateinit var timeout: Timeout
 
     override fun write(ctx: ChannelHandlerContext, msg: Any, promise: ChannelPromise) {
         val scgiRequest = msg as SCGIRequest
         request = scgiRequest.request
         serverCtx = scgiRequest.serverCtx
+        // Set a timeout to read a response, and send a CGI error and close the channel if the timeout expires.
+        // Netty has a builtin ReadTimeoutHandler, but doesn't seem to work in all cases.
+        timeout = timer.newTimeout({
+            logger.severe("SCGI script timed out after ${config.CGI_TIMEOUT} seconds.")
+            ctx.close()
+            serverCtx.writeAndClose(CGIErrorResponse(request), logger)
+        }, config.CGI_TIMEOUT, TimeUnit.SECONDS)
+
         ctx.write(scgiRequest)
     }
 
     override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
+        timeout.cancel()
         val bytes = (msg as ByteBuf).toByteArray()
         try {
             val response = Response.fromBytes(bytes, request)
@@ -90,20 +104,18 @@ class SCGIRequestContextHandler(): ChannelDuplexHandler() {
     }
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
-        if (cause is ReadTimeoutException)
-            logger.severe("SCGI script timed out.")
-        else logger.severe("Encountered error in communicating with SCGI script: ${cause.message}")
+        timeout.cancel()
+        logger.severe("Encountered error in communicating with SCGI script: ${cause.message}")
         serverCtx.writeAndClose(CGIErrorResponse(request), logger)
     }
 }
 
-class SCGIChannelInitializer(private val config: Config): ChannelInitializer<UnixChannel>() {
+class SCGIChannelInitializer(private val config: Config, private val timer: Timer): ChannelInitializer<UnixChannel>() {
     private val logger = Logger.getLogger(javaClass.name)
     override fun initChannel(ch: UnixChannel) {
         val pipeline = ch.pipeline()
-        pipeline.addLast(ReadTimeoutHandler(config.CGI_TIMEOUT))
         pipeline.addLast(SCGIRequestEncoder())
-        pipeline.addLast(SCGIRequestContextHandler())
+        pipeline.addLast(SCGIRequestContextHandler(config, timer))
     }
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
@@ -120,7 +132,7 @@ class SCGIChannelInitializer(private val config: Config): ChannelInitializer<Uni
  * SCGIHandler.
  */
 
-class SCGIClient(config: Config, socket: File) {
+class SCGIClient(config: Config, socket: File, private val timer: Timer) {
 
     private val logger = Logger.getLogger(javaClass.name)
     private val socketAddr = DomainSocketAddress(socket)
@@ -132,7 +144,7 @@ class SCGIClient(config: Config, socket: File) {
             bootstrap = Bootstrap().apply {
                 group(workerGroup)
                 channel(EpollDomainSocketChannel::class.java)
-                handler(SCGIChannelInitializer(config))
+                handler(SCGIChannelInitializer(config, timer))
             }
         } catch (e: Exception) {
             logger.severe("Error establishing connection with SCGI script: ${e.message}")

@@ -6,10 +6,15 @@ import eu.bunburya.apogee.models.ProxyRequestRefusedResponse
 import eu.bunburya.apogee.models.Request
 import eu.bunburya.apogee.models.RequestValidity
 import eu.bunburya.apogee.utils.writeAndClose
+import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import java.util.logging.Logger
 
+/**
+ * Performs basic validation of requests and writes an appropriate error response if a request is not validly formed.
+ */
+@ChannelHandler.Sharable
 class RequestValidator(private val config: Config): ChannelInboundHandlerAdapter() {
 
     private val logger = Logger.getLogger(javaClass.name)

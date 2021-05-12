@@ -4,6 +4,7 @@ import eu.bunburya.apogee.*
 import eu.bunburya.apogee.models.*
 import eu.bunburya.apogee.static.FileServer
 import eu.bunburya.apogee.utils.writeAndClose
+import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import java.util.logging.Logger
@@ -23,6 +24,7 @@ Application logic:
 /**
  * The main handler object that handles successful inbound requests and determines the appropriate response.
  */
+@ChannelHandler.Sharable
 class StaticFileHandler(private val config: Config): ChannelInboundHandlerAdapter() {
 
     private val logger = Logger.getLogger(javaClass.name)

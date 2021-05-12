@@ -3,6 +3,7 @@ package eu.bunburya.apogee.handlers
 import eu.bunburya.apogee.models.Request
 import eu.bunburya.apogee.utils.toByteBuf
 import io.netty.buffer.ByteBuf
+import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.DelimiterBasedFrameDecoder
 import io.netty.handler.ssl.SslHandler

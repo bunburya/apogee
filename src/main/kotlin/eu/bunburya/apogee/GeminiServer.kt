@@ -10,15 +10,36 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.ssl.ClientAuth
 import io.netty.handler.ssl.SslContextBuilder
+import io.netty.handler.ssl.SslHandler
 import java.io.File
 import java.security.cert.X509Certificate
 import java.util.logging.Logger
 import javax.net.ssl.X509TrustManager
 import kotlin.jvm.Throws
 
-private class GeminiChannelInitializer(private val config: Config): ChannelInitializer<SocketChannel>() {
+/**
+ * A class to create and store instances of all handlers, so that new instances do not need to be generated on every
+ * connection. Important to ensure that handlers to be reused in this way are stateless.
+ */
+private class HandlerStore(config: Config) {
 
     private val logger = Logger.getLogger(javaClass.name)
+
+    // Initialise all sharable handlers once, and pass these instances to channel initialisers
+    val responseEncoder = ResponseEncoder(getAccessLogger(config))
+    val requestValidator = RequestValidator(config)
+    val staticFileHandler = StaticFileHandler(config)
+
+    // These handlers may be null, depending on our configuration
+    val clientAuthHandler = if (config.CLIENT_CERT_ZONES.isNotEmpty()) ClientAuthHandler(config) else null
+    val redirectHandler =
+        if (config.TEMP_REDIRECTS.isNotEmpty() || config.PERM_REDIRECTS.isNotEmpty()) RedirectHandler(config)
+        else null
+    val cgiHandler = if (config.CGI_PATHS.isNotEmpty()) CGIHandler(config) else null
+    val scgiHandler = if (config.SCGI_PATHS.isNotEmpty()) SCGIHandler(config) else null
+
+    // Some handlers are not sharable because they maintain internal state, so provide functions to generate new ones
+    fun newRequestDecoder() = RequestDecoder()
 
     // Build SSL context
     private val sslCtx = SslContextBuilder.forServer(File(config.CERT_FILE), File(config.KEY_FILE))
@@ -27,38 +48,49 @@ private class GeminiChannelInitializer(private val config: Config): ChannelIniti
             // "Dummy" trust manager to accept all client certs (including self-signed certs).
             // We can then decide what to do with the certs (ie, accept or reject) later on.
             // TODO: Consider whether this is safe enough, or whether we should add these certs to a TrustStore.
-            override fun getAcceptedIssuers(): Array<X509Certificate>? = arrayOf<X509Certificate>()
+            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
             override fun checkClientTrusted(p0: Array<out X509Certificate>?, p1: String?) {}
             override fun checkServerTrusted(p0: Array<out X509Certificate>?, p1: String?) {}
         })
         .clientAuth(ClientAuth.OPTIONAL)
         .build()
 
+    fun newSslHandler(ch: SocketChannel): SslHandler {
+        logger.fine("Getting new SSL handler")
+        val handler = sslCtx.newHandler(ch.alloc())
+        logger.fine("Engine: ${handler.engine()}")
+        return handler
+    }
+}
+
+private class GeminiChannelInitializer(private val config: Config): ChannelInitializer<SocketChannel>() {
+
+    private val logger = Logger.getLogger(javaClass.name)
+    private val handlerStore = HandlerStore(config)
+
     @Throws(Exception::class)
     override fun initChannel(ch: SocketChannel) {
-
-        logger.fine("Initialising channel.")
-
-        // TODO: Consider whether we should build static instances of handlers and re-use them, rather than initialising
-        // new handlers for every request.
 
         val pipeline = ch.pipeline()
 
         // Add the SSL handler first, with a name so it can be accessed later on.
-        pipeline.addLast("ssl", sslCtx.newHandler(ch.alloc()))
+        pipeline.addLast("ssl", handlerStore.newSslHandler(ch))
         pipeline.addLast(
             // Outbound handlers go first so inbound handlers can send Response directly back to clients if necessary
-            ResponseEncoder(getAccessLogger(config)),
-            RequestDecoder(),
-            RequestValidator(config)
+            handlerStore.responseEncoder,
+            handlerStore.newRequestDecoder(),
+            handlerStore.requestValidator
         )
-        if (config.CLIENT_CERT_ZONES.isNotEmpty()) pipeline.addLast(ClientAuthHandler(config))
-        if (config.CGI_PATHS.isNotEmpty()) pipeline.addLast(CGIHandler(config))
-        if (config.SCGI_PATHS.isNotEmpty()) pipeline.addLast(SCGIHandler(config))
-        if (config.TEMP_REDIRECTS.isNotEmpty() or config.PERM_REDIRECTS.isNotEmpty())
-            pipeline.addLast(RedirectHandler(config.TEMP_REDIRECTS, config.PERM_REDIRECTS))
-        pipeline.addLast(StaticFileHandler(config))
+        if (handlerStore.clientAuthHandler != null) pipeline.addLast(handlerStore.clientAuthHandler)
+        if (handlerStore.cgiHandler != null) pipeline.addLast(handlerStore.cgiHandler)
+        if (handlerStore.scgiHandler != null) pipeline.addLast(handlerStore.scgiHandler)
+        if (handlerStore.redirectHandler != null) pipeline.addLast(handlerStore.redirectHandler)
+        pipeline.addLast(handlerStore.staticFileHandler)
         logger.fine("All handlers added; channel initialised.")
+    }
+
+    override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
+        logger.severe("Encountered exception when initialising channel: ${cause.message}")
     }
 
 }

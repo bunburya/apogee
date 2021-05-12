@@ -7,6 +7,7 @@ import eu.bunburya.apogee.models.Response
 import eu.bunburya.apogee.models.ResponseParseError
 import eu.bunburya.apogee.utils.resolvePath
 import eu.bunburya.apogee.utils.writeAndClose
+import io.netty.util.HashedWheelTimer
 import java.io.File
 import java.io.Serializable
 import java.lang.IllegalArgumentException
@@ -151,9 +152,11 @@ class CGIManager(config: Config): GatewayManager<CGIRequest>(config) {
  */
 class SCGIManager(config: Config): GatewayManager<SCGIRequest>(config) {
 
+    private val timer = HashedWheelTimer()
+
     private val scgiClients = mutableMapOf<String, SCGIClient>().apply {
         for ((prefix, socketPath) in config.SCGI_PATHS) {
-            this[prefix] = SCGIClient(config, File(socketPath))
+            this[prefix] = SCGIClient(config, File(socketPath), timer)
         }
     }.toMap()
 

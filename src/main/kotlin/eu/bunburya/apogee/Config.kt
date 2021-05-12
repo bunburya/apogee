@@ -29,7 +29,7 @@ data class Config (
     val INDEX_FILE: String = defaults.INDEX_FILE,
     val DIR_SORT_METHOD: String = defaults.DIR_SORT_METHOD,
 
-    val CGI_TIMEOUT: Int = defaults.CGI_TIMEOUT,
+    val CGI_TIMEOUT: Long = defaults.CGI_TIMEOUT,
     val CGI_PATHS: List<String> = defaults.CGI_PATHS,
     val SCGI_PATHS: Map<String, String> = defaults.SCGI_PATHS,
 
@@ -73,7 +73,7 @@ data class Config (
             GEMINI_EXT = "gmi",
             INDEX_FILE = "index.gmi",
             DIR_SORT_METHOD = "NAME",
-            CGI_TIMEOUT = 10,
+            CGI_TIMEOUT = 10L,
             CGI_PATHS = listOf(),
             SCGI_PATHS = mapOf(),
             MIME_OVERRIDES = mapOf(),
@@ -100,7 +100,7 @@ data class Config (
                 GEMINI_EXT = toml.getString("GEMINI_EXT", defaults.GEMINI_EXT),
                 INDEX_FILE = toml.getString("INDEX_FILE", defaults.INDEX_FILE),
                 DIR_SORT_METHOD = toml.getString("DIR_SORT_METHOD", defaults.DIR_SORT_METHOD),
-                CGI_TIMEOUT = toml.getLong("CGI_TIMEOUT", null)?.toInt() ?: defaults.CGI_TIMEOUT,
+                CGI_TIMEOUT = toml.getLong("CGI_TIMEOUT", defaults.CGI_TIMEOUT),
                 CGI_PATHS = toml.getList("CGI_PATHS", defaults.CGI_PATHS),
                 SCGI_PATHS = tableToMap(toml.getTable("SCGI_PATHS"), defaults.SCGI_PATHS),
                 MIME_OVERRIDES = tableToMap(toml.getTable("MIME_OVERRIDES"), defaults.MIME_OVERRIDES),

@@ -1,22 +1,22 @@
 package eu.bunburya.apogee.handlers
 
+import eu.bunburya.apogee.Config
 import eu.bunburya.apogee.models.RedirectionResponse
 import eu.bunburya.apogee.models.Request
 import eu.bunburya.apogee.utils.compileKeys
 import eu.bunburya.apogee.utils.writeAndClose
+import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import java.util.logging.Logger
 
-class RedirectHandler(
-    tempRedirects: Map<String, String>,
-    permRedirects: Map<String, String>
-): ChannelInboundHandlerAdapter() {
+@ChannelHandler.Sharable
+class RedirectHandler(config: Config): ChannelInboundHandlerAdapter() {
 
     private val logger = Logger.getLogger(javaClass.name)
 
-    private val tempRedirects = compileKeys(tempRedirects)
-    private val permRedirects = compileKeys(permRedirects)
+    private val tempRedirects = compileKeys(config.TEMP_REDIRECTS)
+    private val permRedirects = compileKeys(config.PERM_REDIRECTS)
 
     override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
         val request = msg as Request

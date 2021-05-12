@@ -4,6 +4,7 @@ import eu.bunburya.apogee.Config
 import eu.bunburya.apogee.models.*
 import eu.bunburya.apogee.utils.compileKeys
 import eu.bunburya.apogee.utils.writeAndClose
+import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import java.security.MessageDigest
@@ -51,7 +52,7 @@ private fun getCertHash(cert: Certificate): ByteArray {
  */
 fun getCertHashString(cert: Certificate): String = getHexString(getCertHash(cert))
 
-
+@ChannelHandler.Sharable
 class ClientAuthHandler(private val config: Config): ChannelInboundHandlerAdapter() {
 
     private val logger = Logger.getLogger(javaClass.name)

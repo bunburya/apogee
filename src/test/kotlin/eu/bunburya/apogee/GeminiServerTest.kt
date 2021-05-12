@@ -281,8 +281,6 @@ internal class GeminiServerTest {
             assertNotEquals("SCGI says error", it.meta)
             assert(it.body.isEmpty())
         }
-        // FIXME: This hangs rather than timing out. One way to fix this would be to use a HashedWheelTimer to manually
-        // create a timeout.
         client.testRequest(URL_BASE + "scgi-path-1/test_actual_scgi_error_3\r\n") {
             assertEquals(42, it.statusCode)
             assertNotEquals("SCGI says error", it.meta)
