@@ -69,7 +69,7 @@ data class Config (
             DOCUMENT_ROOT = "/var/gemini/",
             ACCESS_FILE = null,
             LOG_FILE = null,
-            LOG_LEVEL = "FINE",
+            LOG_LEVEL = "WARNING",
             GEMINI_EXT = "gmi",
             INDEX_FILE = "index.gmi",
             DIR_SORT_METHOD = "NAME",
@@ -112,6 +112,6 @@ data class Config (
     }
 
     val errorLogOutputStream: OutputStream get() =
-        if (LOG_FILE != null) FileOutputStream(File(LOG_FILE)) else System.out
+        if (LOG_FILE != null) FileOutputStream(File(LOG_FILE)) else System.err
 
 }

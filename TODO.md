@@ -6,8 +6,7 @@
 - [X] CGI
   - [X] More testing
   - [X] Figure out why only using ~10 threads
-- [ ] SCGI
-  - [ ] More testing
+- [X] SCGI
 - [ ] FastCGI
 - [X] Proper handling of bad requests
 - [ ] Testing

@@ -29,19 +29,19 @@ CGI_PATHS = [
 #"/scgi-path-1" = "/var/run/apogee/scgi1.sock"
 #"/scgi-path-2" = "/var/run/apogee/scgi2.sock"
 
-## MIME type overrides (not implemented yet)
+## MIME type overrides
 
 #"atom.xml$" = "application/atom+xml"
 #"rss.xml$" = "application/rss+xml"
 
-## Redirects (not implemented yet)
+## Redirects
 #
 #[TEMP_REDIRECTS]
-#"/old/path/file.ext" = "/new/path/file.ext"
+#"^/old/path/file.ext$" = "/new/path/file.ext"
 #[PERM_REDIRECTS]
-#"/old/path/file.ext" = "/new/path/file.ext"
+#"^/old/path/file.ext$" = "/new/path/file.ext"
 #
-## Certificate zones (not fully implemented yet)
+## Certificate zones
 #
 #[CLIENT_CERT_ZONES]
 #"^/secure-zone-1/" = [
