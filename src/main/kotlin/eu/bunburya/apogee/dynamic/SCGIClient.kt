@@ -15,9 +15,6 @@ import io.netty.channel.epoll.EpollEventLoopGroup
 import io.netty.channel.unix.DomainSocketAddress
 import io.netty.channel.unix.UnixChannel
 import io.netty.handler.codec.MessageToByteEncoder
-import io.netty.handler.timeout.ReadTimeoutException
-import io.netty.handler.timeout.ReadTimeoutHandler
-import io.netty.util.HashedWheelTimer
 import io.netty.util.Timeout
 import io.netty.util.Timer
 import java.io.File
@@ -60,7 +57,6 @@ class SCGIRequestEncoder(): MessageToByteEncoder<SCGIRequest>() {
             bytes.addAll(value.encodeToByteArray())
             bytes.add(0)
         }
-        val netstring = toNetstring(bytes)
         out.writeBytes(toNetstring(bytes))
     }
 }
@@ -80,8 +76,8 @@ class SCGIRequestContextHandler(private val config: Config, private val timer: T
         val scgiRequest = msg as SCGIRequest
         request = scgiRequest.request
         serverCtx = scgiRequest.serverCtx
-        // Set a timeout to read a response, and send a CGI error and close the channel if the timeout expires.
-        // Netty has a builtin ReadTimeoutHandler, but doesn't seem to work in all cases.
+        // Set a timeout for reading a response, and send a CGI error and close the connection if the timeout expires.
+        // Netty has a builtin ReadTimeoutHandler, but it doesn't seem to work in all cases.
         timeout = timer.newTimeout({
             logger.severe("SCGI script timed out after ${config.CGI_TIMEOUT} seconds.")
             ctx.close()
