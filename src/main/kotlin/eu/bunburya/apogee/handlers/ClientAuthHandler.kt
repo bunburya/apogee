@@ -3,6 +3,7 @@ package eu.bunburya.apogee.handlers
 import eu.bunburya.apogee.Config
 import eu.bunburya.apogee.models.*
 import eu.bunburya.apogee.utils.compileKeys
+import eu.bunburya.apogee.utils.hashString
 import eu.bunburya.apogee.utils.writeAndClose
 import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
@@ -27,30 +28,8 @@ private enum class ClientCertStatus {
     OTHER // Catch-all. If this is returned, it probably means there is a problem with our logic.
 }
 
-/**
- * Convert a sequence of bytes to a hex string.
- */
-private fun getHexString(bytes: ByteArray): String = StringBuilder(2 * bytes.size).apply {
-    for (b in bytes) {
-        val hex = Integer.toHexString(0xff and b.toInt())
-        if (hex.length == 1) {
-            append('0')
-        }
-        append(hex)
-    }
-}.toString()
 
-/**
- * Get the SHA-256 hash of a certificate, represented as an array of bytes.
- */
-private fun getCertHash(cert: Certificate): ByteArray {
-    return MessageDigest.getInstance("SHA-256").digest(cert.encoded)
-}
 
-/**
- * Get the SHA-256 hash of a certificate, represented as a hex string.
- */
-fun getCertHashString(cert: Certificate): String = getHexString(getCertHash(cert))
 
 @ChannelHandler.Sharable
 class ClientAuthHandler(private val config: Config): ChannelInboundHandlerAdapter() {
@@ -109,7 +88,7 @@ class ClientAuthHandler(private val config: Config): ChannelInboundHandlerAdapte
                 //logger.fine("Matched pattern.")
                 matchedPatterns++
                 if (clientCert == null) return ClientCertStatus.NO_CERT
-                val certHash = getCertHashString(clientCert)
+                val certHash = clientCert.hashString
                 //logger.fine("Found cert with hash $certHash.")
                 // Check if the certificate's hash matches the specified one
                 for (hash in allowedHashes) {

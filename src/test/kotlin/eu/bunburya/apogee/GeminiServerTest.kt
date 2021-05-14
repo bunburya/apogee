@@ -300,5 +300,18 @@ internal class GeminiServerTest {
         }
     }
 
+    @Test
+    fun `test SCGI with client cert`() {
+        var fingerprint: String
+        for (i in 0 until 5) {
+            fingerprint = FINGERPRINTS[i]
+            val (certFile, keyFile) = getRightCredentials(i)
+            client.testRequest(URL_BASE + "scgi-path-1/client_auth\r\n", certFile, keyFile) {
+                assertEquals(20, it.statusCode)
+                assertEquals("$fingerprint\n", it.body.decodeToString())
+            }
+        }
+    }
+
 
 }

@@ -7,6 +7,8 @@
   - [X] More testing
   - [X] Figure out why only using ~10 threads
 - [X] SCGI
+  - [ ] Support network sockets
+- [ ] Implement proxy pass
 - [ ] FastCGI
 - [X] Proper handling of bad requests
 - [ ] Testing

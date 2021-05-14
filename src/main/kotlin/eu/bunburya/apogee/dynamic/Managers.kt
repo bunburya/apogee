@@ -5,12 +5,14 @@ import eu.bunburya.apogee.models.CGIErrorResponse
 import eu.bunburya.apogee.models.Request
 import eu.bunburya.apogee.models.Response
 import eu.bunburya.apogee.models.ResponseParseError
+import eu.bunburya.apogee.utils.hashString
 import eu.bunburya.apogee.utils.resolvePath
 import eu.bunburya.apogee.utils.writeAndClose
 import io.netty.util.HashedWheelTimer
 import java.io.File
 import java.io.Serializable
 import java.lang.IllegalArgumentException
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
@@ -34,6 +36,14 @@ abstract class GatewayManager<requestType: BaseGatewayRequest>(protected val con
         env["REMOTE_ADDR"] = request.ipString
         env["SCRIPT_PATH"] = gatewayRequest.scriptPath
         env["PATH_INFO"] = gatewayRequest.pathInfo
+
+        if (request.clientCerts.isNotEmpty()) {
+            val cert = request.clientCerts[0] as X509Certificate
+            env["TLS_CLIENT_HASH"] = cert.hashString
+            env["TLS_CLIENT_ISSUER_DN"] = cert.issuerX500Principal.name
+            env["TLS_CLIENT_SUBJECT_DN"] = cert.subjectX500Principal.name
+        }
+
         return env
     }
 
