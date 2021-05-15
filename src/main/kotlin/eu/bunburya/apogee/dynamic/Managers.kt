@@ -42,6 +42,7 @@ abstract class GatewayManager<requestType: BaseGatewayRequest>(protected val con
             env["TLS_CLIENT_HASH"] = cert.hashString
             env["TLS_CLIENT_ISSUER_DN"] = cert.issuerX500Principal.name
             env["TLS_CLIENT_SUBJECT_DN"] = cert.subjectX500Principal.name
+            env["AUTH_TYPE"] = "Certificate"
         }
 
         return env
@@ -177,6 +178,7 @@ class SCGIManager(config: Config): GatewayManager<SCGIRequest>(config) {
         val env = prepareGatewayEnv(mutableMapOf(), scgiRequest)
         // Don't add CONTENT_LENGTH, as we write this separately when encoding the request
         env["SCGI"] = "1"
+        env["GATEWAY_INTERFACE"] = "SCGI"
         scgiRequest.env = env
     }
 

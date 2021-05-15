@@ -113,6 +113,27 @@ support network sockets in addition to Unix domain sockets.
 
 Both CGI and SCGI scripts are responsible for sending their own headers (eg, `20 text/gemini\r\n`).
 
+The following are the main variables passed to applications over CGI/SCGI:
+
+|Variable name |Description |Protocol|
+|---|---|---|
+|GATEWAY_INTERFACE|The name of the gateway interface used, followed, if applicable, by a "/" and the version number, eg, `CGI/1.1` or `SCGI`.|CGI/SCGI|
+|SERVER_NAME|The hostname of the server on which Apogee is running.|CGI/SCGI|
+|SERVER_PORT|The port on which Apogee is listening.|CGI/SCGI|
+|SERVER_PROTOCOL|The protocol the server is using - always "GEMINI".|CGI/SCGI|
+|SERVER_SOFTWARE|The software running the server - always "APOGEE".|CGI/SCGI|
+|REMOTE_ADDR|The IP address from which the request originated.|CGI/SCGI|
+|SCRIPT_PATH|The part of the request path corresponding to the relevant script. For CGI, this is the part of the path that corresponds to the CGI script to be run; for SCGI, it corresponds to the prefix specified in the config file.|CGI/SCGI|
+|PATH_INFO|The part of the request path after SCRIPT_PATH (excluding any query string).|CGI/SCGI|
+|QUERY_STRING|You guessed it - the query string, if any, specified in the request.|CGI/SCGI|
+|REQUEST_METHOD|Always an empty string, as Gemini does not support different request methods.|CGI/SCGI|
+|TLS_CLIENT_HASH|If a client certificate is provided, the SHA256 hash of that certificate. Not present otherwise.|CGI/SCGI|
+|TLS_CLIENT_ISSUER_DN|If a client certificate is provided, the distinguished name of the certificate issuer. Not present otherwise.|CGI/SCGI|
+|TLS_CLIENT_SUBJECT_DN|If a client certificate is provided, the distinguished name of the certificate subject. Not present otherwise.|CGI/SCGI|
+|AUTH_TYPE|If a client certificate is provided, "Certificate". Not present otherwise.|CGI/SCGI|
+|SCGI|Always "1", as required by the SCGI protocol.|SCGI|
+|CONTENT_LENGTH|The length of the request body - this will always be 0, as Gemini does not permit request bodies.|SCGI|
+
 ### Redirects
 
 You can tell Apogee to redirect certain paths using the `TEMP_REDIRECTS` and `PERM_REDIRECTS` sections of the config
@@ -127,3 +148,7 @@ Apogee has support for client authentication using client-side SSL certificates.
 be a table mapping regular expressions to lists of supported client certificate SHA256 fingerprints. Client
 authentication is done immediately after the request is received by the server, so redirections, dynamic content, etc,
 will not be handled unless a request is authenticated (if necessary).
+
+## Obligatory security warning
+
+Remember that Apogee is still a work in progress and should not be considered to be completely secure. Use at your own risk. It is your responsibility to ensure that your server, and any scripts called by it, are secure. If you do discover any vulnerabilities or other issues with Apogee, please file an issue.
