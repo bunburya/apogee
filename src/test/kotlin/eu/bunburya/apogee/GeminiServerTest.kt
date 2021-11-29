@@ -1,6 +1,5 @@
 package eu.bunburya.apogee
 
-import io.netty.util.TimerTask
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.io.File

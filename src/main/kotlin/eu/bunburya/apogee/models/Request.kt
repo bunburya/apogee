@@ -27,7 +27,7 @@ enum class RequestValidity(val isValid: Boolean, val defaultMsg: String) {
  *
  * @param content The content of the request.
  * @param ipAddr The IP address from which the request originated.
- * @param clientCert The client's X509 certificate, if present, or null otherwise.
+ * @param clientCerts The client's X509 certificates, if present, or null otherwise.
  */
 class Request (
     val content: String,
@@ -57,7 +57,6 @@ class Request (
     val validity: RequestValidity by lazy {
         when {
             uri == null -> RequestValidity.BAD_REQUEST
-            uri.host == null -> RequestValidity.BAD_REQUEST
             uri.scheme == null -> RequestValidity.BAD_REQUEST
             uri.scheme != "gemini" -> RequestValidity.NOT_GEMINI_URI
             content.toByteArray().size > 1024 -> RequestValidity.URI_TOO_LARGE

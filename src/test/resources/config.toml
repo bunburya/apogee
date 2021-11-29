@@ -1,0 +1,76 @@
+## Basic settings
+
+PORT = 1965
+HOSTNAME = "localhost"
+CERT_FILE = "/home/alan/bin/apogee/src/test/resources/server_certs/openssl_generated/test_cert.pem"
+KEY_FILE = "/home/alan/bin/apogee/src/test/resources/server_certs/openssl_generated/test_key.pem"
+DOCUMENT_ROOT = "/home/alan/bin/apogee/src/test/resources/srv/capsule/"
+
+## Logging
+#ACCESS_FILE = "/var/log/apogee/access.log"
+#LOG_FILE = "/var/log/apogee/error.log"
+
+# What level of severity to log.
+# Must be one of SEVERE, WARNING, INFO, CONFIG, FINE, FINER, FINEST
+LOG_LEVEL = "FINE"
+
+## Static content
+GEMINI_EXT = "gmi"
+INDEX_FILE = "index.gmi"
+DIR_SORT_METHOD = "NAME"
+
+## Dynamic content (not implemented yet)
+
+# Timeout for dynamic content, in seconds
+CGI_TIMEOUT = 10
+
+CGI_PATHS = [
+    "/home/alan/bin/apogee/src/test/resources/srv/capsule/cgi-bin/"
+]
+
+[SCGI_PATHS]
+"/scgi-path-1" = "/home/alan/bin/apogee/src/test/run/scgi_test.sock"
+#"/scgi-path-2" = "/var/run/apogee/scgi2.sock"
+
+## MIME type overrides (not implemented yet)
+[MIME_OVERRIDES]
+"atom.xml$" = "application/atom+xml"
+"rss.xml$" = "application/rss+xml"
+
+## Redirects
+#
+[TEMP_REDIRECTS]
+"^/redirect-test/temp-redirect-from" = "/redirect-test/temp-redirect-to"
+[PERM_REDIRECTS]
+"^/redirect-test/perm-redirect-from" = "/redirect-test/perm-redirect-to"
+
+## Certificate zones (not fully implemented yet)
+#
+[CLIENT_CERT_ZONES]
+#"^/secure-zone-1/" = [
+#	"**SHA-256 HASH**",
+#]
+#"^/secure-zone-2/" = [
+#	"**SHA-256 HASH**",
+#	"**SHA-256 HASH**",
+#]
+"^/auth_zone_0/" = [
+    "8ed39f497beb86e08e3079455d0359d74527c26d79d5df2c45a13f8af611509f"
+]
+"^/auth_zone_1/" = [
+    "3ecae5f560242d134733b6ab6197a1b2f81fd646c396b9f5097c56d96c7098ef"
+]
+"^/auth_zone_2/" = [
+    "8cdfca082f88c210748cf02551ed32d4de14bdd5ddf4bc9d0869f1ba01c43332"
+]
+"^/auth_zone_3/" = [
+    "8e0e8dc95e5a87edc26596d62b94691cfd985ccbaa2e87b3819936d7102be414"
+]
+"^/auth_zone_4/" = [
+    "6ab6843e83129cb02ddc54f4660d3ef8add2649bde8e298ef281b155111ab0c0"
+]
+"^/auth_zone_0_2_4/" = [
+    "8ed39f497beb86e08e3079455d0359d74527c26d79d5df2c45a13f8af611509f",
+    "8cdfca082f88c210748cf02551ed32d4de14bdd5ddf4bc9d0869f1ba01c43332",
+    "6ab6843e83129cb02ddc54f4660d3ef8add2649bde8e298ef281b155111ab0c0"
+]

@@ -28,7 +28,7 @@ internal class RequestTest {
         "gemini://0.0.0.0/" to RequestValidity.OK,
         "gemini://localhost" to RequestValidity.OK,
 
-        "gemini.bunburya.eu" to RequestValidity.NOT_GEMINI_URI,
+        "gemini.bunburya.eu" to RequestValidity.BAD_REQUEST,
         "http://gemini.bunburya.eu" to RequestValidity.NOT_GEMINI_URI,
         veryLongUrl to RequestValidity.URI_TOO_LARGE,
         "gemini:///test_path" to RequestValidity.NO_HOST,
@@ -44,7 +44,7 @@ internal class RequestTest {
         var request: Request
         for ((uri, validity) in expected) {
             request = Request(uri, dummySocketAddress, listOf())
-            assertEquals(validity, request.validity)
+            assertEquals(validity, request.validity, "Test failed for $uri")
         }
     }
 
