@@ -52,7 +52,7 @@ class Request (
     /**
      * Perform some basic checks to determine if a request looks like a valid Gemini request.
      *
-     * Does not check that the resource sought is appropriate, only that the request is validly formed.
+     * Does not check that the hostname or resource sought is appropriate, only that the request is validly formed.
      */
     val validity: RequestValidity by lazy {
         when {

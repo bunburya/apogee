@@ -1,7 +1,0 @@
-# Test heading
-
-Hello World!
-
-## Sub heading
-
-Blah

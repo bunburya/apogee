@@ -4,8 +4,16 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.io.File
 
-
-const val URL_BASE = "gemini://localhost/"
+const val HOSTNAME = "localhost"
+val HOSTNAME_UPPER = HOSTNAME.toUpperCase()
+val HOSTNAME_MIXED = HOSTNAME.let {
+    var new = ""
+    for (i in it.indices) new += if (i % 2 == 0) it[i] else it[i].toUpperCase()
+    new
+}
+val URL_BASE = "gemini://$HOSTNAME/"
+val URL_BASE_UPPER = "gemini://$HOSTNAME_UPPER/"
+val URL_BASE_MIXED = "gemini://$HOSTNAME_MIXED/"
 
 /**
  * Test the server by making various requests and asserting that the responses are as expected. Should be run while
@@ -24,7 +32,8 @@ internal class GeminiServerTest {
         "jpg_file.jpg" to "image/jpeg",
         "text_file.txt" to "text/plain",
         "xml_file.xml" to "application/xml",
-        "rss.xml" to "application/rss+xml"
+        "rss.xml" to "application/rss+xml",
+        "no_mime_type" to "application/octet-stream"
     )
 
     private fun addCRLF(bytes: ByteArray) {
@@ -312,5 +321,38 @@ internal class GeminiServerTest {
         }
     }
 
+    @Test
+    fun `test case-insensitive hostname matching`() {
+        var response: String = ""
+        client.testRequest(URL_BASE + "\r\n") {
+            response = it.body.decodeToString()
+            true  // Return this to satisfy the typing constraint but don't think it's ever used
+        }
+        client.testRequest(URL_BASE_UPPER + "\r\n") {
+            assertEquals(20, it.statusCode, "Request to $URL_BASE_UPPER returned status ${it.statusCode}.")
+            assertEquals(response, it.body.decodeToString(), "Request to $URL_BASE_UPPER returned unexpected response.")
+        }
+        client.testRequest(URL_BASE_MIXED + "\r\n") {
+            assertEquals(20, it.statusCode, "Request to $URL_BASE_MIXED returned status ${it.statusCode}.")
+            assertEquals(response, it.body.decodeToString(), "Request to $URL_BASE_MIXED returned unexpected response.")
+        }
+    }
+
+    @Test
+    fun `test directory listings`() {
+        client.testRequest(URL_BASE + "dir_with_no_index\r\n") {
+            assertEquals(31, it.statusCode)
+        }
+        client.testRequest(URL_BASE + "dir_with_no_index/\r\n") {
+            assertEquals(20, it.statusCode)
+        }
+        client.testRequest(URL_BASE + "empty_dir_with_no_index\r\n") {
+            assertEquals(31, it.statusCode)
+        }
+        client.testRequest(URL_BASE + "empty_dir_with_no_index/\r\n") {
+            assertEquals(20, it.statusCode)
+        }
+
+    }
 
 }

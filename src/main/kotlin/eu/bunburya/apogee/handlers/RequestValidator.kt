@@ -25,9 +25,9 @@ class RequestValidator(private val config: Config): ChannelInboundHandlerAdapter
         if (request.isValid) {
             // We know the request *looks* valid; now check to make sure it is valid having regard to the server
             // configuration
-            val host = request.uri!!.host
+            val host = request.uri!!.host.toLowerCase()  // Lower case to perform case-insensitive matching
             val port = request.uri.port
-            if (host != config.HOSTNAME) ctx.writeAndClose(ProxyRequestRefusedResponse(request), logger)
+            if (host != config.HOSTNAME_LOWERCASE) ctx.writeAndClose(ProxyRequestRefusedResponse(request), logger)
             else if (port != -1 && port != config.PORT) ctx.writeAndClose(ProxyRequestRefusedResponse(request), logger)
             else ctx.fireChannelRead(msg)
         } else {

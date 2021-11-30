@@ -7,8 +7,8 @@ KEY_FILE = "/home/alan/bin/apogee/src/test/resources/server_certs/openssl_genera
 DOCUMENT_ROOT = "/home/alan/bin/apogee/src/test/resources/srv/capsule/"
 
 ## Logging
-#ACCESS_FILE = "/var/log/apogee/access.log"
-#LOG_FILE = "/var/log/apogee/error.log"
+ACCESS_FILE = "/home/alan/bin/apogee/src/test/log/access.log"
+LOG_FILE = "/home/alan/bin/apogee/src/test/log/error.log"
 
 # What level of severity to log.
 # Must be one of SEVERE, WARNING, INFO, CONFIG, FINE, FINER, FINEST

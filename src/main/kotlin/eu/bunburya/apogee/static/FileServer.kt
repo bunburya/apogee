@@ -16,26 +16,29 @@ class FileServer(val config: Config) {
     private val logger = Logger.getLogger(javaClass.name)
     private val rootPath = Paths.get(config.DOCUMENT_ROOT).toAbsolutePath()
     private val dlf = DirectoryListingFactory(config)
-    private val mimeOverrides = compileKeys(config.MIME_OVERRIDES)
+    private val customMimeOverrides = compileKeys(config.MIME_OVERRIDES)
+    // We hard-code certain overrides where Java doesn't give us the best types.
+    private val builtinMimeOverrides = mapOf(
+        "text/xml" to "application/xml"
+    )
 
     /**
      * Get appropriate MIME type for a file, first by checking the name against the overrides specified in the config,
      * then by checking if the file has a .gmi extension, and finally by using Java's standard library to probe the
-     * filename.
+     * filename. We override Java's decision in a small number of cases (eg, for XML, Java gives "text/xml" whereas
+     * "application/xml" is generally preferable).
      */
     private fun getMimeType(filePath: String): String {
-        for ((pattern, mimeType) in mimeOverrides)
+        for ((pattern, mimeType) in customMimeOverrides)
             if (pattern.matcher(filePath).find()) return mimeType
         val (_, ext) = splitExt(filePath)
-        return if (ext == config.GEMINI_EXT) "text/gemini" else Files.probeContentType(Paths.get(filePath))
+        val mimeType: String? =
+            if (ext == config.GEMINI_EXT) "text/gemini"
+            else Files.probeContentType(Paths.get(filePath))
+        return if (mimeType == null) config.DEFAULT_MIME_TYPE
+            else builtinMimeOverrides.getOrDefault(mimeType, mimeType)
     }
-    private fun getMimeType(filePath: Path): String {
-        val str = filePath.toString()
-        for ((pattern, mimeType) in mimeOverrides)
-            if (pattern.matcher(str).find()) return mimeType
-        val (_, ext) = splitExt(str)
-        return if (ext == config.GEMINI_EXT) "text/gemini" else Files.probeContentType(filePath)
-    }
+    private fun getMimeType(filePath: Path): String = getMimeType(filePath.toString())
 
     /**
      * Perform some basic checks that a path is safe.

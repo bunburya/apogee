@@ -28,6 +28,7 @@ data class Config (
     val GEMINI_EXT: String = defaults.GEMINI_EXT,
     val INDEX_FILE: String = defaults.INDEX_FILE,
     val DIR_SORT_METHOD: String = defaults.DIR_SORT_METHOD,
+    val DEFAULT_MIME_TYPE: String = defaults.DEFAULT_MIME_TYPE,
 
     val CGI_TIMEOUT: Long = defaults.CGI_TIMEOUT,
     val CGI_PATHS: List<String> = defaults.CGI_PATHS,
@@ -73,6 +74,7 @@ data class Config (
             GEMINI_EXT = "gmi",
             INDEX_FILE = "index.gmi",
             DIR_SORT_METHOD = "NAME",
+            DEFAULT_MIME_TYPE = "application/octet-stream",
             CGI_TIMEOUT = 10L,
             CGI_PATHS = listOf(),
             SCGI_PATHS = mapOf(),
@@ -100,6 +102,7 @@ data class Config (
                 GEMINI_EXT = toml.getString("GEMINI_EXT", defaults.GEMINI_EXT),
                 INDEX_FILE = toml.getString("INDEX_FILE", defaults.INDEX_FILE),
                 DIR_SORT_METHOD = toml.getString("DIR_SORT_METHOD", defaults.DIR_SORT_METHOD),
+                DEFAULT_MIME_TYPE = toml.getString("DEFAULT_MIME_TYPE", defaults.DEFAULT_MIME_TYPE),
                 CGI_TIMEOUT = toml.getLong("CGI_TIMEOUT", defaults.CGI_TIMEOUT),
                 CGI_PATHS = toml.getList("CGI_PATHS", defaults.CGI_PATHS),
                 SCGI_PATHS = tableToMap(toml.getTable("SCGI_PATHS"), defaults.SCGI_PATHS),
@@ -113,5 +116,8 @@ data class Config (
 
     val errorLogOutputStream: OutputStream get() =
         if (LOG_FILE != null) FileOutputStream(File(LOG_FILE)) else System.err
+
+    // The hostname in all lower case to facilitate case-insensitive hostname matching.
+    val HOSTNAME_LOWERCASE = HOSTNAME.toLowerCase()
 
 }
