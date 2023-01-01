@@ -2,7 +2,6 @@ package eu.bunburya.apogee
 
 import eu.bunburya.apogee.handlers.*
 import io.netty.bootstrap.ServerBootstrap
-import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.ChannelOption
 import io.netty.channel.nio.NioEventLoopGroup
@@ -88,11 +87,6 @@ private class GeminiChannelInitializer(private val config: Config): ChannelIniti
         pipeline.addLast(handlerStore.staticFileHandler)
         logger.fine("All handlers added; channel initialised.")
     }
-
-    override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
-        logger.severe("Encountered exception when initialising channel: ${cause.message}")
-    }
-
 }
 
 class GeminiServer(private val config: Config) {

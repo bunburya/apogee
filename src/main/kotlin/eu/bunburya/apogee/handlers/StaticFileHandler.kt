@@ -52,10 +52,4 @@ class StaticFileHandler(private val config: Config): ChannelInboundHandlerAdapte
         ctx.writeAndClose(processRequest(request), logger)
 
     }
-
-    override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
-        cause.printStackTrace()
-        ctx.close()
-    }
-
 }
