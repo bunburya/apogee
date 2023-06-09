@@ -9,17 +9,23 @@ import eu.bunburya.apogee.utils.toByteArray
 import eu.bunburya.apogee.utils.writeAndClose
 import io.netty.bootstrap.Bootstrap
 import io.netty.buffer.ByteBuf
+import io.netty.buffer.Unpooled
 import io.netty.channel.*
 import io.netty.channel.epoll.EpollDomainSocketChannel
 import io.netty.channel.epoll.EpollEventLoopGroup
 import io.netty.channel.unix.DomainSocketAddress
 import io.netty.channel.unix.UnixChannel
 import io.netty.handler.codec.MessageToByteEncoder
+import io.netty.handler.codec.ByteToMessageDecoder
+import io.netty.handler.codec.DelimiterBasedFrameDecoder
+import io.netty.handler.codec.Delimiters
 import io.netty.util.Timeout
 import io.netty.util.Timer
 import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
+
+import java.nio.charset.StandardCharsets
 
 private fun MutableList<Byte>.addAll(bytes: ByteArray) {
     for (b in bytes) this.add(b)
@@ -59,6 +65,16 @@ class SCGIRequestEncoder(): MessageToByteEncoder<SCGIRequest>() {
         }
         out.writeBytes(toNetstring(bytes))
     }
+}
+
+class SCGIResponseDecoder(): ByteToMessageDecoder() {
+    
+    override fun decode(ctx: ChannelHandlerContext, byteBuf: ByteBuf, out: MutableList<Any>) {
+        if (! ctx.channel().isActive()) {
+            out.add(byteBuf.readBytes(byteBuf.readableBytes()))
+        }
+    }
+
 }
 
 /**
@@ -102,6 +118,7 @@ class SCGIRequestContextHandler(private val config: Config, private val timer: T
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
         timeout.cancel()
         logger.severe("Encountered error in communicating with SCGI script: ${cause.message}")
+        cause.printStackTrace()
         serverCtx.writeAndClose(CGIErrorResponse(request), logger)
     }
 }
@@ -111,12 +128,13 @@ class SCGIChannelInitializer(private val config: Config, private val timer: Time
     override fun initChannel(ch: UnixChannel) {
         val pipeline = ch.pipeline()
         pipeline.addLast(SCGIRequestEncoder())
+        pipeline.addLast(SCGIResponseDecoder())
         pipeline.addLast(SCGIRequestContextHandler(config, timer))
     }
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
         logger.severe("Error initialising connection to SCGI app: ${cause.message}")
-        throw cause
+        cause.printStackTrace()
     }
 }
 
