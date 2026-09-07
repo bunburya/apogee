@@ -2,6 +2,9 @@
 
 Apogee is a server for the [Gemini protocol](https://gemini.circumlunar.space/), written in Kotlin.
 
+**NOTE**: I have archived this repository as of 2026-09-07 as I no longer work on Apogee or intend to so do in the future.
+My current Gemini server development efforts are directed towards [Perigee](https://codeberg.org/bunburya/perigee).
+
 ## Features
 
 Apogee currently
